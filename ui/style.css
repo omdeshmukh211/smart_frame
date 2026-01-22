@@ -1,0 +1,723 @@
+/**
+ * Smart Frame - Styles
+ * Clock UI with sun/moon, photo frame, and action buttons
+ */
+
+/* Reset and Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #fff;
+    color: #000;
+}
+
+/* App Container */
+.app-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #fff;
+}
+
+/* Screens */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Idle Screen */
+.idle-screen {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    align-items: center;
+    justify-content: center;
+}
+
+.idle-content {
+    text-align: center;
+}
+
+.idle-animation {
+    margin-bottom: 2rem;
+}
+
+.pulse-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: pulse 2s ease-in-out infinite;
+    margin: 0 auto;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.idle-text {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================
+   CLOCK SCREEN - Main Layout
+   ============================================ */
+.clock-screen {
+    display: flex;
+    flex-direction: row;
+    padding: 20px;
+    transition: background 1s ease, color 0.5s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Day Mode - Sunny warm background */
+.clock-screen.day-mode {
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFECB3 30%, #FFE082 100%);
+    color: #000;
+}
+
+.clock-screen.day-mode::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, rgba(255,193,7,0.2) 40%, transparent 70%);
+    animation: sunPulse 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes sunPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+/* Night Mode - Dark starry background */
+.clock-screen.night-mode {
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0d0d2b 100%);
+    color: #fff;
+}
+
+.clock-screen.night-mode .clock-hours,
+.clock-screen.night-mode .clock-minutes,
+.clock-screen.night-mode .clock-colon,
+.clock-screen.night-mode .clock-date {
+    color: #fff;
+}
+
+.clock-screen.night-mode .action-btn-circle {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.clock-screen.night-mode .action-btn-circle svg {
+    color: #fff;
+}
+
+.clock-screen.night-mode .action-btn-label {
+    color: #fff;
+}
+
+.clock-screen.night-mode .photo-frame {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.clock-screen.night-mode .photo-frame-text,
+.clock-screen.night-mode .photo-frame-subtext {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Stars Container */
+.stars-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.stars-container.hidden {
+    display: none;
+}
+
+.star {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    animation: twinkle 2s ease-in-out infinite;
+    box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.5);
+}
+
+.star.small {
+    width: 2px;
+    height: 2px;
+    box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes twinkle {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* Sun/Moon Icon - Top Left */
+.time-icon {
+    position: absolute;
+    top: -60px;
+    left: -60px;
+    width: 280px;
+    height: 280px;
+    z-index: 10;
+}
+
+.sun-icon, .moon-icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.sun-icon.hidden, .moon-icon.hidden {
+    display: none;
+}
+
+/* Sun animation */
+.sun-rays {
+    animation: rotateSun 20s linear infinite;
+    transform-origin: 100px 100px;
+}
+
+@keyframes rotateSun {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.sun-glow {
+    animation: sunGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes sunGlowPulse {
+    0%, 100% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Clock Left Side */
+.clock-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 40px;
+    padding-top: 80px;
+    position: relative;
+    z-index: 5;
+}
+
+.clock-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.clock-time-container {
+    display: flex;
+    align-items: baseline;
+}
+
+.clock-hours, .clock-minutes {
+    font-size: 10rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #000;
+    letter-spacing: -0.02em;
+}
+
+.clock-colon {
+    font-size: 8rem;
+    font-weight: 900;
+    color: #000;
+    margin: 0 0.1em;
+    line-height: 1;
+}
+
+.clock-date {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #000;
+    margin-top: 1.5rem;
+}
+
+/* Clock Right Side */
+.clock-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 30px 40px;
+    position: relative;
+    z-index: 5;
+}
+
+/* Photo Frame */
+.photo-frame {
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 16/10;
+    border: 3px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+}
+
+.photo-frame-content {
+    text-align: center;
+}
+
+.photo-frame-text {
+    display: block;
+    font-size: 1rem;
+    color: #666;
+}
+
+.photo-frame-subtext {
+    display: block;
+    font-size: 0.9rem;
+    color: #999;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    padding-bottom: 20px;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    transition: transform 0.2s;
+}
+
+.action-btn:hover {
+    transform: scale(1.05);
+}
+
+.action-btn:active {
+    transform: scale(0.95);
+}
+
+.action-btn-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    transition: background 0.2s;
+}
+
+.action-btn:hover .action-btn-circle {
+    background: #f5f5f5;
+}
+
+.action-btn-circle svg {
+    color: #000;
+}
+
+.action-btn-label {
+    font-size: 0.85rem;
+    color: #000;
+    font-weight: 500;
+}
+
+/* ============================================
+   MUSIC SCREEN
+   ============================================ */
+.music-screen {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%);
+    align-items: center;
+    justify-content: center;
+}
+
+.music-content {
+    text-align: center;
+}
+
+.music-icon {
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.music-artist {
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ============================================
+   MESSAGE OVERLAY
+   ============================================ */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.message-overlay {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.message-container {
+    background: #1a1a2e;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 80%;
+    max-height: 60%;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    color: #fff;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.message-icon {
+    font-size: 1.5rem;
+}
+
+.message-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.message-content {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 1.5rem;
+}
+
+.message-dismiss {
+    background: #4a4a6a;
+    border: none;
+    color: #fff;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.message-dismiss:hover {
+    background: #5a5a7a;
+}
+
+/* ============================================
+   SETTINGS PANEL
+   ============================================ */
+.settings-panel {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.settings-container {
+    background: #fff;
+    border-radius: 16px;
+    padding: 0;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.settings-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #000;
+}
+
+.settings-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.settings-close:hover {
+    color: #000;
+}
+
+.settings-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Control Groups */
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.control-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+    color: #000;
+}
+
+.control-icon {
+    font-size: 1.2rem;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-icon svg {
+    color: #000;
+}
+
+.control-value {
+    margin-left: auto;
+    color: #666;
+    font-weight: 500;
+}
+
+.control-spacer {
+    flex: 1;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    border-radius: 28px;
+    transition: 0.3s;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #007AFF;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(22px);
+}
+
+/* Slider */
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #e0e0e0;
+    outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #007AFF;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #007AFF;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 900px) {
+    .clock-screen {
+        flex-direction: column;
+    }
+    
+    .clock-left {
+        padding-left: 20px;
+        padding-top: 120px;
+        flex: none;
+    }
+    
+    .clock-hours, .clock-minutes {
+        font-size: 6rem;
+    }
+    
+    .clock-colon {
+        font-size: 5rem;
+    }
+    
+    .clock-date {
+        font-size: 1.3rem;
+    }
+    
+    .clock-right {
+        flex: 1;
+        padding: 20px;
+    }
+    
+    .photo-frame {
+        max-width: 300px;
+    }
+    
+    .action-buttons {
+        gap: 15px;
+    }
+    
+    .action-btn-circle {
+        width: 55px;
+        height: 55px;
+    }
+}
+
+@media (max-width: 480px) {
+    .clock-hours, .clock-minutes {
+        font-size: 4rem;
+    }
+    
+    .clock-colon {
+        font-size: 3rem;
+    }
+    
+    .clock-date {
+        font-size: 1rem;
+    }
+    
+    .message-container {
+        padding: 1.5rem;
+    }
+    
+    .action-btn-circle {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .action-btn-label {
+        font-size: 0.75rem;
+    }
+}

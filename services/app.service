@@ -1,0 +1,19 @@
+[Unit]
+Description=Smart Frame Flask Application
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/smart_frame
+ExecStart=/usr/bin/python3 /home/pi/smart_frame/app.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+# Logging
+StandardOutput=append:/home/pi/smart_frame/data/logs.txt
+StandardError=append:/home/pi/smart_frame/data/logs.txt
+
+[Install]
+WantedBy=multi-user.target

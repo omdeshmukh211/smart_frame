@@ -1,0 +1,23 @@
+[Unit]
+Description=Smart Frame Voice Listener Service
+After=network.target sound.target
+Requires=app.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/smart_frame/voice
+ExecStart=/usr/bin/python3 /home/pi/smart_frame/voice/voice_listener.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+# Audio permissions
+SupplementaryGroups=audio
+
+# Logging
+StandardOutput=append:/home/pi/smart_frame/data/logs.txt
+StandardError=append:/home/pi/smart_frame/data/logs.txt
+
+[Install]
+WantedBy=multi-user.target

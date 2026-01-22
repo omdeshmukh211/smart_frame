@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Frame</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Container -->
+    <div id="app" class="app-container">
+        
+        <!-- Idle Screen -->
+        <div id="idle-screen" class="screen idle-screen active">
+            <div class="idle-content">
+                <div class="idle-animation">
+                    <!-- Placeholder for idle animation -->
+                    <div class="pulse-circle"></div>
+                </div>
+                <p class="idle-text">Tap to wake</p>
+            </div>
+        </div>
+        
+        <!-- Clock Screen -->
+        <div id="clock-screen" class="screen clock-screen">
+            <!-- Sun/Moon Icon (top-left) -->
+            <div id="time-icon" class="time-icon">
+                <!-- Sun Icon -->
+                <svg id="sun-icon" class="sun-icon" viewBox="0 0 200 200" width="220" height="220">
+                    <!-- Outer glow -->
+                    <defs>
+                        <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#FFD700" stop-opacity="1"/>
+                            <stop offset="60%" stop-color="#FFA500" stop-opacity="0.6"/>
+                            <stop offset="100%" stop-color="#FF8C00" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <!-- Glow circle -->
+                    <circle cx="100" cy="100" r="95" fill="url(#sunGlow)" class="sun-glow"/>
+                    <!-- Main sun -->
+                    <circle cx="100" cy="100" r="55" fill="#FFD700"/>
+                    <!-- Sun rays -->
+                    <g stroke="#FFD700" stroke-width="5" stroke-linecap="round" class="sun-rays">
+                        <line x1="100" y1="30" x2="100" y2="5"/>
+                        <line x1="100" y1="195" x2="100" y2="170"/>
+                        <line x1="30" y1="100" x2="5" y2="100"/>
+                        <line x1="195" y1="100" x2="170" y2="100"/>
+                        <line x1="50" y1="50" x2="32" y2="32"/>
+                        <line x1="150" y1="150" x2="168" y2="168"/>
+                        <line x1="50" y1="150" x2="32" y2="168"/>
+                        <line x1="150" y1="50" x2="168" y2="32"/>
+                    </g>
+                </svg>
+                <!-- Moon Icon (hidden by default) -->
+                <svg id="moon-icon" class="moon-icon hidden" viewBox="0 0 200 200" width="220" height="220">
+                    <defs>
+                        <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#E8E8D0" stop-opacity="0.4"/>
+                            <stop offset="100%" stop-color="#E8E8D0" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <!-- Moon glow -->
+                    <circle cx="100" cy="100" r="90" fill="url(#moonGlow)"/>
+                    <!-- Main moon -->
+                    <path d="M100 20 C50 20, 20 60, 20 105 C20 155, 55 185, 105 185 C150 185, 180 150, 180 105 C140 125, 90 100, 90 55 C90 40, 95 25, 100 20 Z" fill="#F5F5DC"/>
+                    <!-- Moon craters -->
+                    <circle cx="70" cy="90" r="8" fill="#E8E8D0" opacity="0.5"/>
+                    <circle cx="95" cy="130" r="12" fill="#E8E8D0" opacity="0.4"/>
+                    <circle cx="55" cy="140" r="6" fill="#E8E8D0" opacity="0.5"/>
+                </svg>
+            </div>
+            
+            <!-- Stars Background (for night mode) -->
+            <div id="stars-container" class="stars-container hidden">
+                <div class="star" style="top: 8%; left: 15%; animation-delay: 0s;"></div>
+                <div class="star" style="top: 12%; left: 45%; animation-delay: 0.5s;"></div>
+                <div class="star" style="top: 5%; left: 70%; animation-delay: 1s;"></div>
+                <div class="star" style="top: 20%; left: 85%; animation-delay: 0.3s;"></div>
+                <div class="star" style="top: 35%; left: 92%; animation-delay: 0.8s;"></div>
+                <div class="star" style="top: 15%; left: 25%; animation-delay: 1.2s;"></div>
+                <div class="star" style="top: 25%; left: 55%; animation-delay: 0.7s;"></div>
+                <div class="star" style="top: 8%; left: 60%; animation-delay: 1.5s;"></div>
+                <div class="star" style="top: 40%; left: 75%; animation-delay: 0.2s;"></div>
+                <div class="star" style="top: 55%; left: 88%; animation-delay: 1.1s;"></div>
+                <div class="star" style="top: 65%; left: 95%; animation-delay: 0.6s;"></div>
+                <div class="star" style="top: 75%; left: 80%; animation-delay: 1.4s;"></div>
+                <div class="star" style="top: 85%; left: 70%; animation-delay: 0.4s;"></div>
+                <div class="star" style="top: 90%; left: 40%; animation-delay: 0.9s;"></div>
+                <div class="star" style="top: 80%; left: 20%; animation-delay: 1.3s;"></div>
+                <div class="star small" style="top: 10%; left: 35%; animation-delay: 0.1s;"></div>
+                <div class="star small" style="top: 30%; left: 65%; animation-delay: 0.6s;"></div>
+                <div class="star small" style="top: 45%; left: 82%; animation-delay: 1.0s;"></div>
+                <div class="star small" style="top: 60%; left: 12%; animation-delay: 0.35s;"></div>
+                <div class="star small" style="top: 70%; left: 50%; animation-delay: 0.85s;"></div>
+            </div>
+            
+            <!-- Clock Display (left side) -->
+            <div class="clock-left">
+                <div id="clock-display" class="clock-display">
+                    <div class="clock-time-container">
+                        <span id="clock-hours" class="clock-hours">9</span>
+                        <span class="clock-colon">:</span>
+                        <span id="clock-minutes" class="clock-minutes">30</span>
+                    </div>
+                    <span id="clock-date" class="clock-date">Sat 29 Jan 2026</span>
+                </div>
+            </div>
+            
+            <!-- Right Side Content -->
+            <div class="clock-right">
+                <!-- Photo Frame Placeholder -->
+                <div id="photo-frame" class="photo-frame">
+                    <div class="photo-frame-content">
+                        <span class="photo-frame-text">Photo Frame</span>
+                        <span class="photo-frame-subtext">Loop</span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="btn-music" class="action-btn">
+                        <div class="action-btn-circle">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                                <polygon points="10,8 16,12 10,16" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <span class="action-btn-label">Music</span>
+                    </button>
+                    
+                    <button id="btn-search" class="action-btn">
+                        <div class="action-btn-circle">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                                <line x1="14.5" y1="14.5" x2="20" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span class="action-btn-label">Search</span>
+                    </button>
+                    
+                    <button id="btn-sleep" class="action-btn">
+                        <div class="action-btn-circle">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M12 3v9l6 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span class="action-btn-label">Sleep</span>
+                    </button>
+                    
+                    <button id="btn-settings" class="action-btn">
+                        <div class="action-btn-circle">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span class="action-btn-label">Settings</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Music Screen -->
+        <div id="music-screen" class="screen music-screen">
+            <div class="music-content">
+                <div class="music-icon">
+                    <!-- Placeholder music icon -->
+                    <svg viewBox="0 0 24 24" width="100" height="100">
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <polygon points="10,8 16,12 10,16" fill="currentColor"/>
+                    </svg>
+                </div>
+                <p id="music-artist" class="music-artist">Now Playing</p>
+            </div>
+        </div>
+        
+        <!-- Message Overlay -->
+        <div id="message-overlay" class="overlay message-overlay hidden">
+            <div class="message-container">
+                <div class="message-header">
+                    <span class="message-icon">💬</span>
+                    <span class="message-title">New Message</span>
+                </div>
+                <div id="message-content" class="message-content">
+                    <!-- Message text will be inserted here -->
+                </div>
+                <button id="message-dismiss" class="message-dismiss">Dismiss</button>
+            </div>
+        </div>
+        
+        <!-- Settings Panel (overlay) -->
+        <div id="settings-panel" class="overlay settings-panel hidden">
+            <div class="settings-container">
+                <div class="settings-header">
+                    <h3 class="settings-title">Settings</h3>
+                    <button id="settings-close" class="settings-close">✕</button>
+                </div>
+                
+                <div class="settings-content">
+                    <!-- Bluetooth Control -->
+                    <div class="control-group">
+                        <label class="control-label">
+                            <span class="control-icon">
+                                <svg viewBox="0 0 24 24" width="24" height="24">
+                                    <path d="M12 2L17 7L13 11L17 15L12 20V13L8 17L6 15L11 10L6 5L8 3L13 8V2H12Z" fill="currentColor"/>
+                                </svg>
+                            </span>
+                            <span>Bluetooth</span>
+                            <span class="control-spacer"></span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="bluetooth-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+                    
+                    <!-- Brightness Control -->
+                    <div class="control-group">
+                        <label for="brightness-slider" class="control-label">
+                            <span class="control-icon">☀️</span>
+                            <span>Brightness</span>
+                            <span id="brightness-value" class="control-value">100%</span>
+                        </label>
+                        <input type="range" 
+                               id="brightness-slider" 
+                               class="slider" 
+                               min="0" 
+                               max="100" 
+                               value="100">
+                    </div>
+                    
+                    <!-- Volume Control -->
+                    <div class="control-group">
+                        <label for="volume-slider" class="control-label">
+                            <span class="control-icon">🔊</span>
+                            <span>Volume</span>
+                            <span id="volume-value" class="control-value">70%</span>
+                        </label>
+                        <input type="range" 
+                               id="volume-slider" 
+                               class="slider" 
+                               min="0" 
+                               max="100" 
+                               value="70">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Smart Frame Configuration Settings
+
+clock_timeout: 120
+message_timeout: 300
+default_volume: 70
+default_brightness: 100
