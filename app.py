@@ -19,6 +19,9 @@ from config.constants import STATE_IDLE, STATE_CLOCK, STATE_MUSIC
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='ui', static_url_path='')
+@app.route("/")
+def root():
+    return app.send_static_file("index.html")
 
 # Load configuration
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config', 'settings.yaml')
