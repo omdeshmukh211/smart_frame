@@ -49,6 +49,14 @@ const elements = {
         search: null,
         sleep: null,
         settings: null,
+        games: null,
+    },
+    games: {
+        selectionOverlay: null,
+        selectionClose: null,
+        selectSnake: null,
+        selectTictactoe: null,
+        container: null,
     },
     settings: {
         panel: null,
@@ -63,7 +71,18 @@ const elements = {
             value: null,
         },
     },
+    idle: {
+        face: null,
+    },
 };
+
+// Idle face state
+let lastYawnTime = Date.now();
+let lastHappyTime = Date.now();
+const YAWN_INTERVAL = 20 * 60 * 1000; // 20 minutes in milliseconds
+const YAWN_DURATION = 4000; // 4 seconds
+const HAPPY_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const HAPPY_DURATION = 3000; // 3 seconds
 
 /**
  * Initialize the application
@@ -85,6 +104,9 @@ function init() {
     // Update sun/moon icon
     updateTimeIcon();
     setInterval(updateTimeIcon, 60000); // Check every minute
+    
+    // Initialize idle face animations
+    initIdleFace();
     
     console.log('Smart Frame initialized');
 }
@@ -124,6 +146,16 @@ function cacheElements() {
     elements.settings.brightness.value = document.getElementById('brightness-value');
     elements.settings.volume.slider = document.getElementById('volume-slider');
     elements.settings.volume.value = document.getElementById('volume-value');
+    
+    // Game elements
+    elements.buttons.games = document.getElementById('btn-games');
+    elements.games.selectionOverlay = document.getElementById('game-selection-overlay');
+    elements.games.selectionClose = document.getElementById('game-selection-close');
+    elements.games.selectSnake = document.getElementById('game-select-snake');
+    elements.games.selectTictactoe1p = document.getElementById('game-select-tictactoe-1p');
+    elements.games.selectTictactoe2p = document.getElementById('game-select-tictactoe-2p');
+    elements.games.selectWordle = document.getElementById('game-select-wordle');
+    elements.games.container = document.getElementById('game-container');
 }
 
 /**
@@ -175,6 +207,55 @@ function setupEventListeners() {
     elements.settings.bluetooth.addEventListener('change', (e) => {
         toggleBluetooth(e.target.checked);
     });
+    
+    // Games button and selection
+    if (elements.buttons.games) {
+        elements.buttons.games.addEventListener('click', openGameSelection);
+    }
+    
+    if (elements.games.selectionClose) {
+        elements.games.selectionClose.addEventListener('click', closeGameSelection);
+    }
+    
+    if (elements.games.selectionOverlay) {
+        elements.games.selectionOverlay.addEventListener('click', (e) => {
+            if (e.target === elements.games.selectionOverlay) {
+                closeGameSelection();
+            }
+        });
+    }
+    
+    if (elements.games.selectSnake) {
+        elements.games.selectSnake.addEventListener('click', () => {
+            if (typeof GameManager !== 'undefined') {
+                GameManager.startGame('snake');
+            }
+        });
+    }
+    
+    if (elements.games.selectTictactoe1p) {
+        elements.games.selectTictactoe1p.addEventListener('click', () => {
+            if (typeof GameManager !== 'undefined') {
+                GameManager.startGame('tictactoe', { mode: '1p' });
+            }
+        });
+    }
+    
+    if (elements.games.selectTictactoe2p) {
+        elements.games.selectTictactoe2p.addEventListener('click', () => {
+            if (typeof GameManager !== 'undefined') {
+                GameManager.startGame('tictactoe', { mode: '2p' });
+            }
+        });
+    }
+    
+    if (elements.games.selectWordle) {
+        elements.games.selectWordle.addEventListener('click', () => {
+            if (typeof GameManager !== 'undefined') {
+                GameManager.startGame('wordle');
+            }
+        });
+    }
 }
 
 /**
@@ -189,10 +270,16 @@ async function handleIdleTap() {
         
         if (response.ok) {
             const data = await response.json();
-            updateState(data.state);
+            updateState(data.state, true);
+        } else {
+            // Backend returned error, fallback to local state change
+            console.warn('Tap endpoint returned error, using local fallback');
+            updateState('CLOCK', true);
         }
     } catch (error) {
-        console.error('Tap request failed:', error);
+        // Backend not available, switch locally
+        console.warn('Tap request failed, using local fallback:', error.message);
+        updateState('CLOCK', true);
     }
 }
 
@@ -272,6 +359,24 @@ function closeSettings() {
 }
 
 /**
+ * Open game selection overlay
+ */
+function openGameSelection() {
+    if (elements.games.selectionOverlay) {
+        elements.games.selectionOverlay.classList.remove('hidden');
+    }
+}
+
+/**
+ * Close game selection overlay
+ */
+function closeGameSelection() {
+    if (elements.games.selectionOverlay) {
+        elements.games.selectionOverlay.classList.add('hidden');
+    }
+}
+
+/**
  * Toggle Bluetooth
  */
 async function toggleBluetooth(enabled) {
@@ -306,6 +411,11 @@ function startPolling() {
  * Poll the backend for current state
  */
 async function pollState() {
+    // Don't update state while a game is active (games manage their own state)
+    if (typeof GameManager !== 'undefined' && GameManager.isGameActive()) {
+        return;
+    }
+    
     try {
         const response = await fetch('/state');
         if (response.ok) {
@@ -341,26 +451,26 @@ async function pollMessages() {
 /**
  * Update the UI based on state
  */
-function updateState(newState) {
-    if (newState === currentState) return;
+function updateState(newState, force = false) {
+    if (newState === currentState && !force) return;
     
     currentState = newState;
     
     // Hide all screens
     Object.values(elements.screens).forEach(screen => {
-        screen.classList.remove('active');
+        if (screen) screen.classList.remove('active');
     });
     
     // Show appropriate screen
     switch (newState) {
         case 'IDLE':
-            elements.screens.idle.classList.add('active');
+            if (elements.screens.idle) elements.screens.idle.classList.add('active');
             break;
         case 'CLOCK':
-            elements.screens.clock.classList.add('active');
+            if (elements.screens.clock) elements.screens.clock.classList.add('active');
             break;
         case 'MUSIC':
-            elements.screens.music.classList.add('active');
+            if (elements.screens.music) elements.screens.music.classList.add('active');
             break;
     }
     
@@ -428,6 +538,11 @@ function updateTimeIcon() {
 function showMessage(message) {
     elements.message.content.textContent = message;
     elements.message.overlay.classList.remove('hidden');
+    
+    // Pause game if running
+    if (typeof GameManager !== 'undefined' && GameManager.isGameActive()) {
+        GameManager.pauseGame();
+    }
 }
 
 /**
@@ -435,6 +550,11 @@ function showMessage(message) {
  */
 function dismissMessage() {
     elements.message.overlay.classList.add('hidden');
+    
+    // Resume game if it was paused
+    if (typeof GameManager !== 'undefined' && GameManager.isGameActive()) {
+        GameManager.resumeGame();
+    }
 }
 
 /**
@@ -465,6 +585,151 @@ async function setVolume(level) {
     } catch (error) {
         console.error('Failed to set volume:', error);
     }
+}
+
+// ============================================================================
+// Idle Face Animation Functions
+// ============================================================================
+
+/**
+ * Initialize idle face animations
+ */
+function initIdleFace() {
+    // Update face state immediately
+    updateIdleFaceState();
+    
+    // Check face state every minute
+    setInterval(updateIdleFaceState, 60000);
+    
+    // Check for yawn trigger every 30 seconds
+    setInterval(checkYawnTrigger, 30000);
+    
+    // Check for happy expression every 30 seconds
+    setInterval(checkHappyTrigger, 30000);
+}
+
+/**
+ * Update idle face state based on time of day
+ * Sleep mode: 11 PM (23:00) to 8 AM (08:00)
+ */
+function updateIdleFaceState() {
+    const idleScreen = elements.screens.idle;
+    if (!idleScreen) return;
+    
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // Sleep mode: 11 PM (23) to 8 AM (8)
+    const isSleepTime = hour >= 23 || hour < 8;
+    
+    if (isSleepTime) {
+        idleScreen.classList.add('sleep-mode');
+        idleScreen.classList.remove('yawning');
+        idleScreen.classList.remove('happy');
+    } else {
+        idleScreen.classList.remove('sleep-mode');
+    }
+}
+
+/**
+ * Check if it's time to trigger a yawn
+ * Yawns every 20 minutes when not in sleep mode
+ */
+function checkYawnTrigger() {
+    const idleScreen = elements.screens.idle;
+    if (!idleScreen) return;
+    
+    // Don't yawn if in sleep mode or not on idle screen
+    if (idleScreen.classList.contains('sleep-mode')) return;
+    if (!idleScreen.classList.contains('active')) return;
+    if (idleScreen.classList.contains('happy')) return;
+    
+    const now = Date.now();
+    
+    // Check if 20 minutes have passed since last yawn
+    if (now - lastYawnTime >= YAWN_INTERVAL) {
+        triggerYawn();
+        lastYawnTime = now;
+    }
+}
+
+/**
+ * Check if it's time to show happy expression
+ */
+function checkHappyTrigger() {
+    const idleScreen = elements.screens.idle;
+    if (!idleScreen) return;
+    
+    // Don't be happy if in sleep mode or yawning
+    if (idleScreen.classList.contains('sleep-mode')) return;
+    if (!idleScreen.classList.contains('active')) return;
+    if (idleScreen.classList.contains('yawning')) return;
+    
+    const now = Date.now();
+    
+    // Check if 5 minutes have passed since last happy moment
+    if (now - lastHappyTime >= HAPPY_INTERVAL) {
+        triggerHappy();
+        lastHappyTime = now;
+    }
+}
+
+/**
+ * Trigger a yawn animation
+ */
+function triggerYawn() {
+    const idleScreen = elements.screens.idle;
+    if (!idleScreen) return;
+    
+    // Add yawning class
+    idleScreen.classList.add('yawning');
+    
+    // Remove yawning class after animation completes
+    setTimeout(() => {
+        idleScreen.classList.remove('yawning');
+    }, YAWN_DURATION);
+}
+
+/**
+ * Trigger happy expression (^^ eyes)
+ */
+function triggerHappy() {
+    const idleScreen = elements.screens.idle;
+    if (!idleScreen) return;
+    
+    // Add happy class
+    idleScreen.classList.add('happy');
+    
+    // Remove happy class after duration
+    setTimeout(() => {
+        idleScreen.classList.remove('happy');
+    }, HAPPY_DURATION);
+}
+
+/**
+ * Force a yawn (can be called for testing)
+ */
+function forceYawn() {
+    triggerYawn();
+    lastYawnTime = Date.now();
+}
+
+/**
+ * Force happy expression (can be called for testing)
+ */
+function forceHappy() {
+    triggerHappy();
+    lastHappyTime = Date.now();
+}
+
+/**
+ * Force sleep mode toggle (can be called for testing)
+ */
+function toggleSleepMode() {
+    const idleScreen = elements.screens.idle;
+    if (!idleScreen) return;
+    
+    idleScreen.classList.toggle('sleep-mode');
 }
 
 // Initialize when DOM is ready

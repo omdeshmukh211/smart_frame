@@ -13,10 +13,62 @@
         <!-- Idle Screen -->
         <div id="idle-screen" class="screen idle-screen active">
             <div class="idle-content">
-                <div class="idle-animation">
-                    <!-- Placeholder for idle animation -->
-                    <div class="pulse-circle"></div>
+                <!-- Cute Robot Face -->
+                <div class="robot-container">
+                    <!-- Screen face -->
+                    <div class="screen-face">
+                        <!-- Eyes container -->
+                        <div class="robot-eyes">
+                            <!-- Normal awake eyes -->
+                            <div class="robot-eye left-robot-eye">
+                                <div class="eye-dot"></div>
+                            </div>
+                            <div class="robot-eye right-robot-eye">
+                                <div class="eye-dot"></div>
+                            </div>
+                            
+                            <!-- Happy ^^ eyes -->
+                            <div class="happy-eyes">
+                                <div class="happy-eye left"></div>
+                                <div class="happy-eye right"></div>
+                            </div>
+                            
+                            <!-- Sleep eyes -- -->
+                            <div class="sleep-eyes">
+                                <div class="sleep-eye left"></div>
+                                <div class="sleep-eye right"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mouth -->
+                        <div class="robot-mouth-container">
+                            <!-- Normal cute smile -->
+                            <div class="robot-mouth smile-mouth">
+                                <svg viewBox="0 0 50 25" width="50" height="25">
+                                    <path d="M5 5 Q25 25 45 5" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <!-- Yawn mouth -->
+                            <div class="robot-mouth yawn-mouth">
+                                <div class="yawn-o"></div>
+                            </div>
+                            <!-- Small sleep mouth -->
+                            <div class="robot-mouth sleep-mouth">
+                                <svg viewBox="0 0 30 15" width="30" height="15">
+                                    <path d="M5 5 Q15 15 25 5" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ZZZ for sleep mode -->
+                    <div class="sleep-zzz">
+                        <span class="zzz z1">z</span>
+                        <span class="zzz z2">z</span>
+                        <span class="zzz z3">Z</span>
+                    </div>
                 </div>
+                
                 <p class="idle-text">Tap to wake</p>
             </div>
         </div>
@@ -157,6 +209,20 @@
                         </div>
                         <span class="action-btn-label">Settings</span>
                     </button>
+                    
+                    <button id="btn-games" class="action-btn">
+                        <div class="action-btn-circle">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <rect x="2" y="6" width="20" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="7" cy="12" r="2" fill="currentColor"/>
+                                <circle cx="17" cy="10" r="1.5" fill="currentColor"/>
+                                <circle cx="17" cy="14" r="1.5" fill="currentColor"/>
+                                <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+                                <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <span class="action-btn-label">Games</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -248,8 +314,48 @@
             </div>
         </div>
         
+        <!-- Game Selection Overlay -->
+        <div id="game-selection-overlay" class="overlay game-selection-overlay hidden">
+            <div class="game-selection-container">
+                <div class="game-selection-header">
+                    <h2 class="game-selection-title">🎮 Games</h2>
+                    <button id="game-selection-close" class="game-selection-close">✕</button>
+                </div>
+                <div class="game-selection-grid">
+                    <button id="game-select-snake" class="game-select-btn">
+                        <div class="game-select-icon">🐍</div>
+                        <div class="game-select-label">Snake</div>
+                        <div class="game-select-desc">Collect tea cups</div>
+                    </button>
+                    <button id="game-select-tictactoe-1p" class="game-select-btn">
+                        <div class="game-select-icon">🤖</div>
+                        <div class="game-select-label">X-O (1P)</div>
+                        <div class="game-select-desc">vs AI</div>
+                    </button>
+                    <button id="game-select-tictactoe-2p" class="game-select-btn">
+                        <div class="game-select-icon">👥</div>
+                        <div class="game-select-label">X-O (2P)</div>
+                        <div class="game-select-desc">vs Friend</div>
+                    </button>
+                    <button id="game-select-wordle" class="game-select-btn">
+                        <div class="game-select-icon">📝</div>
+                        <div class="game-select-label">Wordle</div>
+                        <div class="game-select-desc">Daily word</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Container (for active games) -->
+        <div id="game-container" class="game-container hidden"></div>
+        
     </div>
     
+    <!-- Game Scripts -->
+    <script src="../games/game_manager.js"></script>
+    <script src="../games/snake.js"></script>
+    <script src="../games/tic_tac_toe.js"></script>
+    <script src="../games/wordle.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

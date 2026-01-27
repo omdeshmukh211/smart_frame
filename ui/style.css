@@ -43,42 +43,323 @@ html, body {
 
 /* Idle Screen */
 .idle-screen {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: linear-gradient(135deg, #0a0a12 0%, #12121f 50%, #0a0a12 100%);
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
 }
 
 .idle-content {
     text-align: center;
-}
-
-.idle-animation {
-    margin-bottom: 2rem;
-}
-
-.pulse-circle {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    animation: pulse 2s ease-in-out infinite;
-    margin: 0 auto;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 0.5;
-    }
-    50% {
-        transform: scale(1.1);
-        opacity: 0.8;
-    }
+    z-index: 1;
 }
 
 .idle-text {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 1.5rem;
+    transition: opacity 0.5s ease;
+}
+
+.idle-screen.sleep-mode .idle-text {
+    opacity: 0.2;
+}
+
+/* ============================================
+   CUTE ROBOT FACE - Minimal for 5" display
+   ============================================ */
+.robot-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Screen face - the main display area */
+.screen-face {
+    width: 180px;
+    height: 140px;
+    background: linear-gradient(145deg, #1a2a3a, #0f1a25);
+    border-radius: 30px;
+    position: relative;
+    box-shadow: 
+        0 0 40px rgba(100, 180, 255, 0.1),
+        inset 0 0 20px rgba(0, 0, 0, 0.5);
+    animation: faceFloat 3s ease-in-out infinite;
+}
+
+@keyframes faceFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+/* Robot Eyes */
+.robot-eyes {
+    position: absolute;
+    top: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 40px;
+}
+
+.robot-eye {
+    position: relative;
+    width: 32px;
+    height: 32px;
+}
+
+.eye-dot {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 50%;
+    animation: blink 4s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 42%, 50%, 100% {
+        transform: scaleY(1);
+    }
+    45%, 47% {
+        transform: scaleY(0.1);
+    }
+}
+
+/* Happy ^^ eyes */
+.happy-eyes {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 40px;
+    opacity: 0;
+}
+
+.happy-eye {
+    width: 26px;
+    height: 13px;
+    border: 4px solid #fff;
+    border-bottom: none;
+    border-radius: 20px 20px 0 0;
+}
+
+/* Sleep -- eyes */
+.sleep-eyes {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 35px;
+    opacity: 0;
+}
+
+.sleep-eye {
+    width: 28px;
+    height: 5px;
+    background: #fff;
+    border-radius: 3px;
+}
+
+/* Mouth */
+.robot-mouth-container {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.robot-mouth {
+    color: #fff;
+}
+
+.smile-mouth {
+    transition: opacity 0.3s ease;
+}
+
+.yawn-mouth {
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+}
+
+.yawn-o {
+    width: 28px;
+    height: 35px;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.sleep-mouth {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+}
+
+/* ============================================
+   HAPPY STATE
+   ============================================ */
+.idle-screen.happy .robot-eye .eye-dot {
+    animation: none;
+    opacity: 0;
+}
+
+.idle-screen.happy .happy-eyes {
+    opacity: 1;
+}
+
+/* ============================================
+   YAWN STATE
+   ============================================ */
+.idle-screen.yawning .smile-mouth {
+    opacity: 0;
+}
+
+.idle-screen.yawning .yawn-mouth {
+    opacity: 1;
+    animation: yawnPop 4s ease-in-out;
+}
+
+@keyframes yawnPop {
+    0% { transform: translateX(-50%) scale(0.5); }
+    15% { transform: translateX(-50%) scale(1.1); }
+    25%, 75% { transform: translateX(-50%) scale(1); }
+    100% { transform: translateX(-50%) scale(0.5); }
+}
+
+.idle-screen.yawning .eye-dot {
+    animation: yawnEyes 4s ease-in-out !important;
+}
+
+@keyframes yawnEyes {
+    0%, 100% { transform: scaleY(1); }
+    15%, 85% { transform: scaleY(0.4); }
+}
+
+.idle-screen.yawning .screen-face {
+    animation: yawnTilt 4s ease-in-out;
+}
+
+@keyframes yawnTilt {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    25%, 75% { transform: translateY(-4px) rotate(-2deg); }
+}
+
+/* ============================================
+   SLEEP MODE (11 PM - 8 AM)
+   ============================================ */
+.idle-screen.sleep-mode .screen-face {
+    animation: sleepFloat 5s ease-in-out infinite;
+}
+
+@keyframes sleepFloat {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-5px) rotate(1deg); }
+}
+
+.idle-screen.sleep-mode .robot-eye .eye-dot {
+    opacity: 0;
+}
+
+.idle-screen.sleep-mode .sleep-eyes {
+    opacity: 1;
+}
+
+.idle-screen.sleep-mode .smile-mouth {
+    opacity: 0;
+}
+
+.idle-screen.sleep-mode .sleep-mouth {
+    opacity: 1;
+}
+
+/* Screen glow breathing in sleep */
+.idle-screen.sleep-mode .screen-face {
+    box-shadow: 
+        0 0 30px rgba(100, 180, 255, 0.05),
+        inset 0 0 20px rgba(0, 0, 0, 0.5);
+    animation: sleepFloat 5s ease-in-out infinite, screenBreath 4s ease-in-out infinite;
+}
+
+@keyframes screenBreath {
+    0%, 100% {
+        box-shadow: 
+            0 0 20px rgba(100, 180, 255, 0.03),
+            inset 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        box-shadow: 
+            0 0 35px rgba(100, 180, 255, 0.08),
+            inset 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* ZZZ Animation */
+.sleep-zzz {
+    position: absolute;
+    top: -10px;
+    right: -25px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.idle-screen.sleep-mode .sleep-zzz {
+    opacity: 1;
+}
+
+.zzz {
+    position: absolute;
+    color: rgba(150, 200, 255, 0.8);
+    font-weight: bold;
+    font-style: italic;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    opacity: 0;
+    text-shadow: 0 0 8px rgba(150, 200, 255, 0.4);
+}
+
+.idle-screen.sleep-mode .z1 {
+    font-size: 0.9rem;
+    animation: zzzFloat 2.5s ease-in-out infinite;
+}
+
+.idle-screen.sleep-mode .z2 {
     font-size: 1.2rem;
-    color: rgba(255, 255, 255, 0.6);
+    animation: zzzFloat 2.5s ease-in-out infinite 0.8s;
+}
+
+.idle-screen.sleep-mode .z3 {
+    font-size: 1.5rem;
+    animation: zzzFloat 2.5s ease-in-out infinite 1.6s;
+}
+
+@keyframes zzzFloat {
+    0% {
+        opacity: 0;
+        transform: translate(0, 0) rotate(-10deg) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(25px, -45px) rotate(10deg) scale(0.9);
+    }
 }
 
 /* ============================================
@@ -720,4 +1001,457 @@ html, body {
     .action-btn-label {
         font-size: 0.75rem;
     }
+}
+
+/* ============================================
+   GAMES - Game Selection Overlay
+   ============================================ */
+.game-selection-overlay {
+    background: rgba(10, 10, 18, 0.98);
+    z-index: 1000;
+}
+
+.game-selection-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.game-selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.game-selection-title {
+    font-size: 1.8rem;
+    color: #fff;
+    margin: 0;
+}
+
+.game-selection-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.game-selection-close:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.game-selection-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+}
+
+.game-select-btn {
+    background: linear-gradient(145deg, #1e2a3a, #16202e);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 30px;
+    min-width: 140px;
+    min-height: 160px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.game-select-btn:active {
+    transform: scale(0.95);
+    border-color: rgba(100, 180, 255, 0.5);
+    box-shadow: 0 0 20px rgba(100, 180, 255, 0.2);
+}
+
+.game-select-icon {
+    font-size: 3rem;
+}
+
+.game-select-label {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.game-select-desc {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   GAMES - Game Container
+   ============================================ */
+.game-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a12;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.game-container.hidden {
+    display: none;
+}
+
+.game-exit-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.game-exit-btn:active {
+    background: rgba(255, 100, 100, 0.3);
+}
+
+/* Snake Game Styles */
+.snake-game {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+}
+
+.snake-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px 15px;
+}
+
+.snake-score {
+    font-size: 1.3rem;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 20px;
+    border-radius: 20px;
+}
+
+#snake-canvas {
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(74, 222, 128, 0.1);
+}
+
+.snake-touch-hint {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Tic Tac Toe Styles */
+.tictactoe-game {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+}
+
+.tictactoe-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px 20px;
+}
+
+.tictactoe-status {
+    font-size: 1.2rem;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 20px;
+    border-radius: 20px;
+}
+
+#tictactoe-canvas {
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(100, 180, 255, 0.1);
+}
+
+/* Game Over Overlay */
+.game-over-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 18, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.game-over-overlay.hidden {
+    display: none;
+}
+
+.game-over-content {
+    text-align: center;
+    padding: 30px;
+}
+
+.game-over-content h2 {
+    font-size: 2rem;
+    color: #fff;
+    margin: 0 0 20px 0;
+}
+
+.game-over-content p {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 30px 0;
+}
+
+.game-over-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.game-btn {
+    background: linear-gradient(145deg, #3b82f6, #2563eb);
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 15px 30px;
+    border-radius: 12px;
+    cursor: pointer;
+    min-width: 120px;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.game-btn:active {
+    transform: scale(0.95);
+}
+
+.game-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.game-btn.secondary:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   WORDLE GAME
+   ============================================ */
+.wordle-game {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.wordle-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px 10px;
+}
+
+.wordle-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.wordle-spacer {
+    width: 50px;
+}
+
+.wordle-grid-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+    padding: 5px 0;
+}
+
+.wordle-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.wordle-row {
+    display: flex;
+    gap: 6px;
+}
+
+.wordle-row.shake {
+    animation: wordleShake 0.5s ease;
+}
+
+@keyframes wordleShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+}
+
+.wordle-tile {
+    width: 48px;
+    height: 48px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.03);
+    text-transform: uppercase;
+    transition: border-color 0.15s, transform 0.15s, background-color 0.3s;
+}
+
+.wordle-tile.filled {
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: scale(1.02);
+}
+
+.wordle-tile.flip {
+    animation: wordleFlip 0.5s ease;
+}
+
+@keyframes wordleFlip {
+    0% { transform: rotateX(0deg); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
+}
+
+.wordle-tile.revealed {
+    border-color: transparent;
+}
+
+.wordle-tile.correct {
+    background: #538d4e;
+}
+
+.wordle-tile.present {
+    background: #b59f3b;
+}
+
+.wordle-tile.absent {
+    background: #3a3a4c;
+}
+
+/* Wordle Keyboard */
+.wordle-keyboard {
+    width: 100%;
+    max-width: 380px;
+    padding: 10px 5px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wordle-keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.wordle-key {
+    min-width: 28px;
+    height: 52px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.wordle-key.wide {
+    min-width: 52px;
+    font-size: 0.85rem;
+    padding: 0 8px;
+}
+
+.wordle-key:active,
+.wordle-key.pressed {
+    transform: scale(0.94);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.wordle-key.correct {
+    background: #538d4e;
+}
+
+.wordle-key.present {
+    background: #b59f3b;
+}
+
+.wordle-key.absent {
+    background: #3a3a4c;
+}
+
+/* Wordle Result */
+.wordle-result-content {
+    background: rgba(20, 20, 35, 0.98);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 40px 30px;
+}
+
+.wordle-result-word {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 25px;
+    letter-spacing: 2px;
 }
