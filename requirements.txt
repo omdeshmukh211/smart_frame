@@ -1,0 +1,6 @@
+flask
+flask-cors
+pyyaml
+requests
+python-dateutil
+schedule
