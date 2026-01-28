@@ -1,23 +1,6 @@
-"""
-Responses Module
-Hardcoded response templates for voice feedback.
-"""
-
-from typing import Optional
-
-# Note: Requires pyttsx3 for text-to-speech
-# pip install pyttsx3
-
-try:
-    import pyttsx3
-    TTS_AVAILABLE = True
-except ImportError:
-    TTS_AVAILABLE = False
-    print("Warning: pyttsx3 not installed. Text-to-speech disabled.")
-
-
-# Response templates
-RESPONSES = {
+def speak_response(text):
+    # Stub for TTS. Replace with local TTS engine if available (e.g., espeak, pyttsx3)
+    print(f'[TTS] {text}')
     # Greetings
     "greeting": "Hello, I'm awake.",
     "goodbye": "Goodbye!",

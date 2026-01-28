@@ -1,0 +1,8 @@
+{
+  "play music": "open_youtube_music",
+  "play coldplay": "play_youtube_music_search",
+  "show messages": "open_message_library",
+  "what time is it": "speak_time",
+  "go to sleep": "enter_idle",
+  "play snake": "launch_snake_game"
+}

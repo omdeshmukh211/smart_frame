@@ -1,3 +1,58 @@
+import json
+import os
+import threading
+from .command_parser import load_command_map, parse_command
+from .actions import execute_action
+from .responses import speak_response
+
+try:
+    import vosk
+    import pyaudio
+except ImportError:
+    vosk = None
+    pyaudio = None
+
+def load_wake_phrases(config_path='config/voice_triggers.json'):
+    with open(config_path, 'r') as f:
+        data = json.load(f)
+    return [phrase.strip().lower() for phrase in data.get('wake_phrases', [])]
+
+def listen_and_transcribe():
+    if vosk is None or pyaudio is None:
+        raise ImportError("vosk and pyaudio must be installed.")
+    model = vosk.Model('vosk-model-small-en-us-0.15')  # Adjust path as needed
+    rec = vosk.KaldiRecognizer(model, 16000)
+    pa = pyaudio.PyAudio()
+    stream = pa.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=8000)
+    stream.start_stream()
+    while True:
+        data = stream.read(4000, exception_on_overflow=False)
+        if rec.AcceptWaveform(data):
+            result = rec.Result()
+            text = json.loads(result).get('text', '')
+            yield text
+
+def check_wake_phrase(text, wake_phrases):
+    text = text.strip().lower()
+    for phrase in wake_phrases:
+        if text.startswith(phrase):
+            return phrase, text[len(phrase):].strip()
+    return None, None
+
+def voice_pipeline():
+    wake_phrases = load_wake_phrases()
+    command_map = load_command_map()
+    for text in listen_and_transcribe():
+        if not text:
+            continue
+        phrase, command_text = check_wake_phrase(text, wake_phrases)
+        if not phrase:
+            continue  # Ignore, no wake phrase
+        action, extra = parse_command(command_text, command_map)
+        if not action:
+            speak_response("I didn't catch that. Can you say it again?")
+            continue
+        threading.Thread(target=execute_action, args=(action, command_text, extra), daemon=True).start()
 """
 Voice Listener Module
 Captures speech and converts to text.

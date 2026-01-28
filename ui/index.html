@@ -223,6 +223,15 @@
                         </div>
                         <span class="action-btn-label">Games</span>
                     </button>
+                    
+                    <button id="btn-messages" class="action-btn">
+                        <div class="action-btn-circle">
+                            <svg viewBox="0 0 24 24" width="28" height="28">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <span class="action-btn-label">Messages</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -251,7 +260,27 @@
                 <div id="message-content" class="message-content">
                     <!-- Message text will be inserted here -->
                 </div>
-                <button id="message-dismiss" class="message-dismiss">Dismiss</button>
+                <div class="message-footer">
+                    <div id="message-timer" class="message-timer">Auto-dismiss in 5:00</div>
+                    <div class="message-buttons">
+                        <button id="message-dismiss" class="message-dismiss">Dismiss</button>
+                        <button id="message-library-btn" class="message-library-btn">📚 Library</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Message Library Overlay -->
+        <div id="message-library-overlay" class="overlay message-library-overlay hidden">
+            <div class="message-library-container">
+                <div class="message-library-header">
+                    <h2 class="message-library-title">📚 Message Library</h2>
+                    <button id="message-library-close" class="message-library-close">✕</button>
+                </div>
+                <div id="message-library-list" class="message-library-list">
+                    <!-- Messages will be loaded here -->
+                    <div class="message-library-empty">No messages yet</div>
+                </div>
             </div>
         </div>
         

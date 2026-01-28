@@ -1,3 +1,24 @@
+import json
+import difflib
+
+def load_command_map(config_path='config/voice_commands.json'):
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+def parse_command(text, command_map):
+    text = text.strip().lower()
+    # Exact match
+    if text in command_map:
+        return command_map[text], None
+    # Fuzzy/keyword match
+    best = difflib.get_close_matches(text, command_map.keys(), n=1, cutoff=0.7)
+    if best:
+        return command_map[best[0]], None
+    # Fallback: try keyword match
+    for key in command_map:
+        if key in text:
+            return command_map[key], None
+    return None, None
 """
 Command Parser Module
 Maps recognized text to structured intents.

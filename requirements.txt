@@ -4,3 +4,7 @@ pyyaml
 requests
 python-dateutil
 schedule
+vosk
+pyaudio
+# Optional for TTS (uncomment if using):
+# pyttsx3
