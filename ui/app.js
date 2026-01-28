@@ -8,6 +8,7 @@ const CONFIG = {
     API_BASE_URL: '',  // Same origin
     POLL_INTERVAL: 1000,  // 1 second
     MESSAGE_POLL_INTERVAL: 5000,  // 5 seconds
+    MESSAGE_AUTO_DISMISS: 300,  // 5 minutes in seconds
     // Day/Night thresholds (24-hour format)
     DAY_START_HOUR: 6,   // 6 AM
     NIGHT_START_HOUR: 18, // 6 PM
@@ -18,6 +19,9 @@ let currentState = 'IDLE';
 let isSettingsOpen = false;
 let pollTimer = null;
 let messagePollTimer = null;
+let messageAutoDismissTimer = null;
+let messageCountdownInterval = null;
+let messageSecondsRemaining = 0;
 
 // DOM Elements
 const elements = {
@@ -43,6 +47,13 @@ const elements = {
         overlay: null,
         content: null,
         dismiss: null,
+        timer: null,
+        libraryBtn: null,
+    },
+    messageLibrary: {
+        overlay: null,
+        list: null,
+        close: null,
     },
     buttons: {
         music: null,
@@ -50,6 +61,7 @@ const elements = {
         sleep: null,
         settings: null,
         games: null,
+        messages: null,
     },
     games: {
         selectionOverlay: null,
@@ -133,6 +145,12 @@ function cacheElements() {
     elements.message.overlay = document.getElementById('message-overlay');
     elements.message.content = document.getElementById('message-content');
     elements.message.dismiss = document.getElementById('message-dismiss');
+    elements.message.timer = document.getElementById('message-timer');
+    elements.message.libraryBtn = document.getElementById('message-library-btn');
+    
+    elements.messageLibrary.overlay = document.getElementById('message-library-overlay');
+    elements.messageLibrary.list = document.getElementById('message-library-list');
+    elements.messageLibrary.close = document.getElementById('message-library-close');
     
     elements.buttons.music = document.getElementById('btn-music');
     elements.buttons.search = document.getElementById('btn-search');
@@ -149,6 +167,7 @@ function cacheElements() {
     
     // Game elements
     elements.buttons.games = document.getElementById('btn-games');
+    elements.buttons.messages = document.getElementById('btn-messages');
     elements.games.selectionOverlay = document.getElementById('game-selection-overlay');
     elements.games.selectionClose = document.getElementById('game-selection-close');
     elements.games.selectSnake = document.getElementById('game-select-snake');
@@ -165,14 +184,27 @@ function setupEventListeners() {
     // Idle screen tap handler
     elements.screens.idle.addEventListener('click', handleIdleTap);
     
-    // Message dismiss
+    // Message dismiss and library
     elements.message.dismiss.addEventListener('click', dismissMessage);
+    elements.message.libraryBtn.addEventListener('click', () => {
+        dismissMessage();
+        openMessageLibrary();
+    });
+    
+    // Message library
+    elements.messageLibrary.close.addEventListener('click', closeMessageLibrary);
+    elements.messageLibrary.overlay.addEventListener('click', (e) => {
+        if (e.target === elements.messageLibrary.overlay) {
+            closeMessageLibrary();
+        }
+    });
     
     // Action buttons
     elements.buttons.music.addEventListener('click', handleMusicButton);
     elements.buttons.search.addEventListener('click', handleSearchButton);
     elements.buttons.sleep.addEventListener('click', handleSleepButton);
     elements.buttons.settings.addEventListener('click', openSettings);
+    elements.buttons.messages.addEventListener('click', openMessageLibrary);
     
     // Settings panel
     elements.settings.close.addEventListener('click', closeSettings);
@@ -533,11 +565,27 @@ function updateTimeIcon() {
 }
 
 /**
- * Show a message overlay
+ * Show a message overlay with 5-minute auto-dismiss
  */
 function showMessage(message) {
+    // Clear any existing timers
+    clearMessageTimers();
+    
     elements.message.content.textContent = message;
     elements.message.overlay.classList.remove('hidden');
+    
+    // Start 5-minute auto-dismiss countdown
+    messageSecondsRemaining = CONFIG.MESSAGE_AUTO_DISMISS;
+    updateMessageTimerDisplay();
+    
+    messageCountdownInterval = setInterval(() => {
+        messageSecondsRemaining--;
+        updateMessageTimerDisplay();
+        
+        if (messageSecondsRemaining <= 0) {
+            dismissMessage();
+        }
+    }, 1000);
     
     // Pause game if running
     if (typeof GameManager !== 'undefined' && GameManager.isGameActive()) {
@@ -546,15 +594,139 @@ function showMessage(message) {
 }
 
 /**
+ * Update the countdown timer display
+ */
+function updateMessageTimerDisplay() {
+    if (elements.message.timer) {
+        const minutes = Math.floor(messageSecondsRemaining / 60);
+        const seconds = messageSecondsRemaining % 60;
+        const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        elements.message.timer.textContent = `Auto-dismiss in ${timeStr}`;
+    }
+}
+
+/**
+ * Clear message auto-dismiss timers
+ */
+function clearMessageTimers() {
+    if (messageCountdownInterval) {
+        clearInterval(messageCountdownInterval);
+        messageCountdownInterval = null;
+    }
+    if (messageAutoDismissTimer) {
+        clearTimeout(messageAutoDismissTimer);
+        messageAutoDismissTimer = null;
+    }
+}
+
+/**
  * Dismiss the message overlay
  */
 function dismissMessage() {
+    clearMessageTimers();
     elements.message.overlay.classList.add('hidden');
+    
+    // Clear the message on backend
+    fetch('/message/clear', { method: 'POST' }).catch(() => {});
     
     // Resume game if it was paused
     if (typeof GameManager !== 'undefined' && GameManager.isGameActive()) {
         GameManager.resumeGame();
     }
+}
+
+/**
+ * Open message library overlay
+ */
+async function openMessageLibrary() {
+    elements.messageLibrary.overlay.classList.remove('hidden');
+    await loadMessageHistory();
+}
+
+/**
+ * Close message library overlay
+ */
+function closeMessageLibrary() {
+    elements.messageLibrary.overlay.classList.add('hidden');
+}
+
+/**
+ * Load and display message history
+ */
+async function loadMessageHistory() {
+    const listEl = elements.messageLibrary.list;
+    
+    try {
+        const response = await fetch('/message/history');
+        if (!response.ok) throw new Error('Failed to fetch');
+        
+        const data = await response.json();
+        const messages = data.messages || [];
+        
+        if (messages.length === 0) {
+            listEl.innerHTML = '<div class="message-library-empty">No messages yet</div>';
+            return;
+        }
+        
+        // Sort by delivered_at descending (newest first)
+        messages.sort((a, b) => {
+            return new Date(b.delivered_at) - new Date(a.delivered_at);
+        });
+        
+        listEl.innerHTML = messages.map(msg => {
+            const deliveredDate = formatMessageDate(msg.delivered_at);
+            const scheduledDate = msg.scheduled_at || '';
+            
+            return `
+                <div class="message-library-item">
+                    <div class="message-library-item-header">
+                        <span class="message-library-from">${escapeHtml(msg.from || 'Unknown')}</span>
+                        <span class="message-library-date">${deliveredDate}</span>
+                    </div>
+                    <div class="message-library-text">${escapeHtml(msg.text || '')}</div>
+                    ${scheduledDate ? `<div class="message-library-scheduled">Scheduled: ${scheduledDate}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Failed to load message history:', error);
+        listEl.innerHTML = '<div class="message-library-empty">Failed to load messages</div>';
+    }
+}
+
+/**
+ * Format message date for display
+ */
+function formatMessageDate(dateStr) {
+    try {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) {
+            // Today - show time
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays === 1) {
+            return 'Yesterday';
+        } else if (diffDays < 7) {
+            return `${diffDays} days ago`;
+        } else {
+            return date.toLocaleDateString();
+        }
+    } catch {
+        return dateStr;
+    }
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 /**

@@ -2,6 +2,83 @@
 
 A smart display system with voice control, dynamic clock display, and music playback capabilities. Features day/night mode with animated sun/moon icons and a beautiful visual experience.
 
+---
+
+## 🆕 New Features
+
+### 📩 Message System
+- Send messages to the frame via the API or UI.
+- Messages are displayed on the screen and can be managed from the backend.
+- Message history is stored in `data/messages.txt`.
+
+### 🎵 YouTube Music Integration
+- Press the **Music** button or use a voice command to open YouTube Music in Chromium.
+- If Chromium is already open on YouTube Music, it will not open a new window (idempotent behavior).
+- Voice commands like "play coldplay" will search and auto-play the top result on YouTube Music.
+- Chromium opens in full-screen (kiosk) mode and is brought to the foreground.
+
+### 🗣️ Voice Command Pipeline
+- **Wake phrase gated:** Only processes speech that starts with a configurable wake phrase (see `config/voice_triggers.json`).
+- **Configurable commands:** All voice commands and their actions are mapped in `config/voice_commands.json`.
+- **Offline speech-to-text:** Uses Vosk for local, offline speech recognition (no cloud required).
+- **Pipeline:**
+   1. Capture speech from microphone
+   2. Convert to text (STT)
+   3. Normalize and check for wake phrase
+   4. Parse command and execute mapped action
+   5. Optional spoken feedback (TTS stub included)
+- **Safe and robust:** Ignores speech without wake phrase, never executes partial/unsafe commands, and runs all actions in background threads.
+- **Easy to extend:** Add new wake phrases or commands by editing the JSON config files—no code changes needed.
+
+#### Example Wake Phrase Config (`config/voice_triggers.json`):
+```json
+{
+   "wake_phrases": [
+      "hey om",
+      "hello om"
+   ]
+}
+```
+
+#### Example Command Map (`config/voice_commands.json`):
+```json
+{
+   "play music": "open_youtube_music",
+   "play coldplay": "play_youtube_music_search",
+   "show messages": "open_message_library",
+   "what time is it": "speak_time",
+   "go to sleep": "enter_idle",
+   "play snake": "launch_snake_game"
+}
+```
+
+#### Example Voice Usage
+- "Hey Om, play music"
+- "Hello Om, play Coldplay"
+- "Hey Om, what time is it?"
+- "Hey Om, show messages"
+
+#### Voice Pipeline Files
+- `voice/voice_listener.py` — Main pipeline (STT, wake phrase, command parsing, action dispatch)
+- `voice/command_parser.py` — Command matching logic
+- `voice/actions.py` — Action implementations (background execution, TTS feedback)
+- `voice/responses.py` — Simple TTS stub
+- `backend/music_controller.py` — Chromium/YouTube Music open/search/autoplay logic
+
+#### Requirements
+- Add to `requirements.txt`:
+   - `vosk`
+   - `pyaudio`
+   - (optional) `pyttsx3` for TTS
+
+#### To Run Voice Listener
+```bash
+cd voice
+python3 voice_listener.py
+```
+
+---
+
 ## 📁 Project Structure
 
 ```

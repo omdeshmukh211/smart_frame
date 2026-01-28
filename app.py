@@ -3,6 +3,7 @@ Smart Frame - Main Flask Application
 Central server managing system state and exposing REST APIs.
 """
 
+import logging
 import os
 import yaml
 from flask import Flask, jsonify, request, send_from_directory
@@ -12,6 +13,8 @@ from backend.state_manager import get_state_manager
 from backend.message_manager import get_message_manager
 from backend.music_controller import get_music_controller
 from backend import system_controls
+from backend.git_updater import start_git_updater
+from backend.scheduled_message_manager import start_scheduled_message_manager
 
 # Import constants
 from config.constants import STATE_IDLE, STATE_CLOCK, STATE_MUSIC
@@ -20,6 +23,8 @@ from config.constants import STATE_IDLE, STATE_CLOCK, STATE_MUSIC
 # Initialize Flask app
 app = Flask(__name__, static_folder='ui', static_url_path='')
 @app.route("/")
+import subprocess
+import threading
 def root():
     return app.send_static_file("index.html")
 
@@ -175,6 +180,25 @@ def clear_message():
     
     return jsonify({
         'success': True,
+    })
+
+
+@app.route('/message/history', methods=['GET'])
+def get_message_history():
+    """
+    Get the history of delivered scheduled messages.
+    
+    Returns:
+        JSON array of delivered messages with timestamps
+    """
+    from backend.scheduled_message_manager import get_scheduled_message_manager
+    manager = get_scheduled_message_manager()
+    history = manager.get_message_history()
+    
+    return jsonify({
+        'success': True,
+        'messages': history,
+        'count': len(history),
     })
 
 
@@ -349,13 +373,58 @@ def health_check():
 
 
 # ============================================================================
+# Scheduled Message Callback
+# ============================================================================
+
+def on_scheduled_message(msg: dict):
+    """
+    Callback triggered when a scheduled message is due.
+    
+    This function is called by the ScheduledMessageManager when a message's
+    scheduled time is reached. It integrates with the existing message system.
+    
+    Args:
+        msg: Dictionary containing message data (id, text, from, schedule_at, timezone)
+    """
+    text = msg.get('text', '')
+    sender = msg.get('from', 'Unknown')
+    msg_id = msg.get('id', 'unknown')
+    
+    # Format message with sender
+    formatted_message = f"From {sender}: {text}"
+    
+    # Set as active message using existing message manager
+    message_manager.set_message(formatted_message)
+    
+    # Log the delivery
+    logging.info(f"Scheduled message delivered: [{msg_id}] {formatted_message[:50]}...")
+    
+    # TODO: Play notification chime
+    # TODO: Trigger UI popup overlay regardless of current screen
+
+
+# ============================================================================
 # Main Entry Point
 # ============================================================================
 
 if __name__ == '__main__':
+    # Configure logging for git updater
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
     print("Starting Smart Frame server...")
     print(f"Clock timeout: {config.get('clock_timeout')}s")
     print(f"Message timeout: {config.get('message_timeout')}s")
+    
+    # Start background git updater (checks for updates every 10 minutes)
+    start_git_updater()
+    print("Git auto-updater started (interval: 10 minutes)")
+    
+    # Start scheduled message manager (checks every 30 seconds)
+    start_scheduled_message_manager(on_message_callback=on_scheduled_message)
+    print("Scheduled message manager started (interval: 30 seconds)")
     
     # Run the Flask server
     app.run(
