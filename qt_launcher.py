@@ -45,22 +45,28 @@ os.environ['QTWEBENGINE_DISABLE_SANDBOX'] = '1'  # Required for running as root/
 os.environ['QT_WEBENGINE_DISABLE_GPU'] = '1'  # Disable GPU acceleration
 os.environ['LIBGL_ALWAYS_SOFTWARE'] = '1'  # Force software OpenGL
 
-# Reduce memory usage
+# Fix for "Illegal instruction" on Raspberry Pi ARM
+# Disable AVX/SSE instructions that may not be supported
 os.environ['QTWEBENGINE_CHROMIUM_FLAGS'] = (
     '--disable-gpu '
-    '--disable-software-rasterizer '
     '--disable-gpu-compositing '
+    '--disable-software-rasterizer '
     '--disable-dev-shm-usage '  # Use /tmp instead of /dev/shm (saves memory)
-    '--single-process '  # Run in single process mode (reduces memory)
     '--no-sandbox '
+    '--disable-seccomp-filter-sandbox '
     '--disable-extensions '
     '--disable-background-networking '
     '--disable-sync '
     '--disable-translate '
-    '--disable-features=TranslateUI '
+    '--disable-features=TranslateUI,VizDisplayCompositor '
     '--disable-backing-store-limit '
-    '--js-flags="--max-old-space-size=128"'  # Limit JS heap to 128MB
+    '--in-process-gpu '
+    '--disable-logging '
 )
+
+# Disable GPU features that cause illegal instruction on ARM
+os.environ['QT_OPENGL'] = 'software'
+os.environ['LIBGL_ALWAYS_INDIRECT'] = '1'
 
 # Now import PyQt5
 from PyQt5.QtCore import Qt, QUrl, QTimer, pyqtSignal, QObject
