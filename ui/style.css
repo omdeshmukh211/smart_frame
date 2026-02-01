@@ -17,6 +17,10 @@ html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #fff;
     color: #000;
+    /* Optimized for 7-inch 1024x600 display */
+    font-size: 16px;
+    -webkit-text-size-adjust: none;
+    -webkit-font-smoothing: antialiased;
 }
 
 /* App Container */
@@ -79,10 +83,10 @@ html, body {
 
 /* Screen face - the main display area */
 .screen-face {
-    width: 180px;
-    height: 140px;
+    width: 240px;
+    height: 180px;
     background: linear-gradient(145deg, #1a2a3a, #0f1a25);
-    border-radius: 30px;
+    border-radius: 35px;
     position: relative;
     box-shadow: 
         0 0 40px rgba(100, 180, 255, 0.1),
@@ -102,17 +106,17 @@ html, body {
 /* Robot Eyes */
 .robot-eyes {
     position: absolute;
-    top: 35px;
+    top: 45px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 40px;
+    gap: 50px;
 }
 
 .robot-eye {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
 }
 
 .eye-dot {
@@ -535,8 +539,8 @@ html, body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-left: 40px;
-    padding-top: 80px;
+    padding-left: 30px;
+    padding-top: 60px;
     position: relative;
     z-index: 5;
 }
@@ -553,7 +557,7 @@ html, body {
 }
 
 .clock-hours, .clock-minutes {
-    font-size: 10rem;
+    font-size: 7.5rem;
     font-weight: 900;
     line-height: 1;
     color: #000;
@@ -561,7 +565,7 @@ html, body {
 }
 
 .clock-colon {
-    font-size: 8rem;
+    font-size: 6rem;
     font-weight: 900;
     color: #000;
     margin: 0 0.1em;
@@ -569,10 +573,10 @@ html, body {
 }
 
 .clock-date {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #000;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
 }
 
 /* Clock Right Side */
@@ -582,7 +586,7 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 30px 40px;
+    padding: 25px 30px;
     position: relative;
     z-index: 5;
 }
@@ -590,7 +594,7 @@ html, body {
 /* Photo Frame */
 .photo-frame {
     width: 100%;
-    max-width: 400px;
+    max-width: 340px;
     aspect-ratio: 16/10;
     border: 3px solid #000;
     display: flex;
@@ -644,10 +648,10 @@ html, body {
 }
 
 .action-btn-circle {
-    width: 70px;
-    height: 70px;
+    width: 85px;
+    height: 85px;
     border-radius: 50%;
-    border: 2px solid #000;
+    border: 3px solid #000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1595,4 +1599,178 @@ html, body {
     color: rgba(255, 255, 255, 0.6);
     margin-bottom: 25px;
     letter-spacing: 2px;
+}
+
+/* ============================================
+   7-INCH DISPLAY OPTIMIZATIONS (1024x600)
+   ============================================ */
+
+/* Optimize for exact 1024x600 resolution */
+@media screen and (width: 1024px) and (height: 600px) {
+    /* Ensure full viewport usage */
+    html, body {
+        font-size: 14px;
+        min-height: 600px;
+        max-height: 600px;
+    }
+    
+    /* Clock screen optimizations for 7-inch */
+    .clock-hours, .clock-minutes {
+        font-size: 6.5rem;
+    }
+    
+    .clock-colon {
+        font-size: 5.2rem;
+    }
+    
+    .clock-date {
+        font-size: 1.4rem;
+        margin-top: 0.8rem;
+    }
+    
+    .clock-left {
+        padding-left: 25px;
+        padding-top: 40px;
+    }
+    
+    .clock-right {
+        padding: 20px 25px;
+    }
+    
+    /* Touch targets for 7-inch display */
+    .action-btn-circle {
+        width: 90px;
+        height: 90px;
+        border-width: 3px;
+    }
+    
+    .action-btn-circle svg {
+        font-size: 2rem;
+        width: 2rem;
+        height: 2rem;
+    }
+    
+    .action-btn-label {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .action-buttons {
+        gap: 25px;
+    }
+    
+    /* Game selection optimized for touch */
+    .game-select-btn {
+        min-width: 180px;
+        min-height: 180px;
+        padding: 25px;
+        border-radius: 25px;
+    }
+    
+    .game-select-icon {
+        font-size: 4rem;
+        margin-bottom: 8px;
+    }
+    
+    .game-select-label {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    .game-select-desc {
+        font-size: 1rem;
+        margin-top: 5px;
+    }
+    
+    .game-selection-close {
+        width: 60px;
+        height: 60px;
+        font-size: 1.8rem;
+    }
+    
+    /* Robot face optimization for 7-inch */
+    .screen-face {
+        width: 280px;
+        height: 210px;
+        border-radius: 40px;
+    }
+    
+    .robot-eyes {
+        top: 55px;
+        gap: 60px;
+    }
+    
+    .robot-eye {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .robot-mouth-container {
+        bottom: 35px;
+    }
+    
+    /* Message overlay touch optimization */
+    .message-close {
+        width: 60px;
+        height: 60px;
+        font-size: 1.8rem;
+    }
+    
+    .message-text {
+        font-size: 1.8rem;
+        line-height: 1.4;
+    }
+    
+    .message-from {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+    
+    /* Ensure games fill screen properly on 7-inch */
+    .game-container {
+        width: 1024px;
+        height: 600px;
+    }
+    
+    #snake-canvas {
+        width: 480px;
+        height: 480px;
+    }
+    
+    #tictactoe-canvas {
+        width: 400px;
+        height: 400px;
+    }
+    
+    .snake-header, .tictactoe-header {
+        padding-bottom: 20px;
+    }
+    
+    .snake-score, .tictactoe-status {
+        font-size: 1.5rem;
+        padding: 12px 25px;
+    }
+    
+    .game-exit-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 1.8rem;
+    }
+}
+
+/* High DPI optimization for 7-inch displays */
+@media screen and (width: 1024px) and (height: 600px) and (-webkit-min-device-pixel-ratio: 1.5) {
+    /* Crisp text rendering for high DPI */
+    * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Ensure sharp borders */
+    .action-btn-circle,
+    .photo-frame,
+    .screen-face {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
 }
