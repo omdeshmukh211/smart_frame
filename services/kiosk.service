@@ -34,11 +34,14 @@ WorkingDirectory=/home/raspberrypi4/projects/smart_frame
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/raspberrypi4/.Xauthority
 
-# Qt/WebEngine environment for software rendering (no GPU)
+# Mesa LLVMpipe software rendering (required for Raspberry Pi 4)
+Environment=LIBGL_ALWAYS_SOFTWARE=true
+Environment=GALLIUM_DRIVER=llvmpipe
+Environment=QT_XCB_GL_INTEGRATION=none
+
+# Qt/WebEngine settings
 Environment=QT_QPA_PLATFORM=xcb
-Environment=QT_WEBENGINE_DISABLE_GPU=1
 Environment=QTWEBENGINE_DISABLE_SANDBOX=1
-Environment=LIBGL_ALWAYS_SOFTWARE=1
 
 # Memory optimization
 Environment=MALLOC_TRIM_THRESHOLD_=65536

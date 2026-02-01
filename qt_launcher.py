@@ -39,34 +39,29 @@ sys.path.insert(0, PROJECT_ROOT)
 # Environment Setup (MUST be before PyQt5 imports)
 # ============================================================================
 
-# Force software rendering - critical for Raspberry Pi without GPU acceleration
-os.environ['QT_QPA_PLATFORM'] = 'xcb'  # X11 backend
-os.environ['QTWEBENGINE_DISABLE_SANDBOX'] = '1'  # Required for running as root/service
-os.environ['QT_WEBENGINE_DISABLE_GPU'] = '1'  # Disable GPU acceleration
-os.environ['LIBGL_ALWAYS_SOFTWARE'] = '1'  # Force software OpenGL
+# Force Mesa LLVMpipe software rendering (required for Raspberry Pi 4)
+os.environ['LIBGL_ALWAYS_SOFTWARE'] = 'true'
+os.environ['GALLIUM_DRIVER'] = 'llvmpipe'
+os.environ['QT_XCB_GL_INTEGRATION'] = 'none'
 
-# Fix for "Illegal instruction" on Raspberry Pi ARM
-# Disable AVX/SSE instructions that may not be supported
+# Qt/WebEngine settings
+os.environ['QT_QPA_PLATFORM'] = 'xcb'  # X11 backend
+os.environ['QTWEBENGINE_DISABLE_SANDBOX'] = '1'  # Required for running as service
+
+# Chromium flags for QtWebEngine
 os.environ['QTWEBENGINE_CHROMIUM_FLAGS'] = (
     '--disable-gpu '
     '--disable-gpu-compositing '
     '--disable-software-rasterizer '
-    '--disable-dev-shm-usage '  # Use /tmp instead of /dev/shm (saves memory)
     '--no-sandbox '
-    '--disable-seccomp-filter-sandbox '
+    '--in-process-gpu '
+    '--disable-dev-shm-usage '
     '--disable-extensions '
     '--disable-background-networking '
     '--disable-sync '
     '--disable-translate '
     '--disable-features=TranslateUI,VizDisplayCompositor '
-    '--disable-backing-store-limit '
-    '--in-process-gpu '
-    '--disable-logging '
 )
-
-# Disable GPU features that cause illegal instruction on ARM
-os.environ['QT_OPENGL'] = 'software'
-os.environ['LIBGL_ALWAYS_INDIRECT'] = '1'
 
 # Now import PyQt5
 from PyQt5.QtCore import Qt, QUrl, QTimer, pyqtSignal, QObject
