@@ -1,9 +1,9 @@
 /**
- * Smart Frame - Styles
- * Clock UI with sun/moon, photo frame, and action buttons
+ * Smart Frame - Optimized for 1024x600 Elecrow 7" Display
+ * Software rendering optimized - minimal animations, efficient layouts
  */
 
-/* Reset and Base */
+/* Reset and Base - Optimized for 1024x600 */
 * {
     margin: 0;
     padding: 0;
@@ -11,18 +11,21 @@
 }
 
 html, body {
-    width: 100%;
-    height: 100%;
+    width: 1024px;
+    height: 600px;
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: Arial, sans-serif; /* Web-safe font for performance */
     background: #fff;
     color: #000;
+    font-size: 14px; /* Base font size for 1024x600 */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeSpeed; /* Optimize for performance over quality */
 }
 
-/* App Container */
+/* App Container - Fixed to display dimensions */
 .app-container {
-    width: 100%;
-    height: 100%;
+    width: 1024px;
+    height: 600px;
     position: relative;
     background: #fff;
 }
@@ -32,8 +35,8 @@ html, body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 1024px;
+    height: 600px;
     display: none;
 }
 
@@ -41,14 +44,15 @@ html, body {
     display: flex;
 }
 
-/* Idle Screen */
+/* ============================================
+   IDLE SCREEN - Simplified for performance
+   ============================================ */
 .idle-screen {
-    background: linear-gradient(135deg, #0a0a12 0%, #12121f 50%, #0a0a12 100%);
+    background: #1a1a2e; /* Solid color instead of gradient */
     align-items: center;
     justify-content: center;
     flex-direction: column;
     position: relative;
-    overflow: hidden;
 }
 
 .idle-content {
@@ -57,19 +61,12 @@ html, body {
 }
 
 .idle-text {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 1.5rem;
-    transition: opacity 0.5s ease;
+    font-size: 16px;
+    color: #888;
+    margin-top: 20px;
 }
 
-.idle-screen.sleep-mode .idle-text {
-    opacity: 0.2;
-}
-
-/* ============================================
-   CUTE ROBOT FACE - Minimal for 5" display
-   ============================================ */
+/* Robot Face - Simplified for performance */
 .robot-container {
     position: relative;
     display: flex;
@@ -77,102 +74,82 @@ html, body {
     justify-content: center;
 }
 
-/* Screen face - the main display area */
 .screen-face {
-    width: 180px;
-    height: 140px;
-    background: linear-gradient(145deg, #1a2a3a, #0f1a25);
-    border-radius: 30px;
+    width: 200px;
+    height: 160px;
+    background: #2a3a4a; /* Solid color instead of gradient */
+    border-radius: 25px;
     position: relative;
-    box-shadow: 
-        0 0 40px rgba(100, 180, 255, 0.1),
-        inset 0 0 20px rgba(0, 0, 0, 0.5);
-    animation: faceFloat 3s ease-in-out infinite;
+    border: 2px solid #4a5a6a;
 }
 
-@keyframes faceFloat {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-6px);
-    }
-}
-
-/* Robot Eyes */
+/* Robot Eyes - Minimal animation */
 .robot-eyes {
     position: absolute;
     top: 35px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 40px;
+    gap: 50px;
 }
 
 .robot-eye {
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    border-radius: 50%;
     position: relative;
-    width: 32px;
-    height: 32px;
 }
 
 .eye-dot {
-    width: 100%;
-    height: 100%;
-    background: #fff;
+    width: 18px;
+    height: 18px;
+    background: #000;
     border-radius: 50%;
-    animation: blink 4s ease-in-out infinite;
+    position: absolute;
+    top: 6px;
+    left: 6px;
 }
 
-@keyframes blink {
-    0%, 42%, 50%, 100% {
-        transform: scaleY(1);
-    }
-    45%, 47% {
-        transform: scaleY(0.1);
-    }
-}
-
-/* Happy ^^ eyes */
+/* Happy eyes - no animation */
 .happy-eyes {
     position: absolute;
-    top: 5px;
+    top: 35px;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    gap: 40px;
-    opacity: 0;
+    display: none;
+    gap: 50px;
 }
 
 .happy-eye {
-    width: 26px;
-    height: 13px;
-    border: 4px solid #fff;
+    width: 30px;
+    height: 15px;
+    border: 3px solid #fff;
     border-bottom: none;
     border-radius: 20px 20px 0 0;
 }
 
-/* Sleep -- eyes */
+/* Sleep eyes */
 .sleep-eyes {
     position: absolute;
-    top: 12px;
+    top: 45px;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    gap: 35px;
-    opacity: 0;
+    display: none;
+    gap: 45px;
 }
 
 .sleep-eye {
-    width: 28px;
-    height: 5px;
+    width: 35px;
+    height: 4px;
     background: #fff;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
-/* Mouth */
+/* Mouth - Simple SVG */
 .robot-mouth-container {
     position: absolute;
-    bottom: 30px;
+    bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
 }
@@ -181,8 +158,8 @@ html, body {
     color: #fff;
 }
 
-.smile-mouth {
-    transition: opacity 0.3s ease;
+.smile-mouth svg {
+    display: block;
 }
 
 .yawn-mouth {
@@ -190,15 +167,15 @@ html, body {
     top: -5px;
     left: 50%;
     transform: translateX(-50%);
-    opacity: 0;
+    display: none;
 }
 
 .yawn-o {
-    width: 28px;
-    height: 35px;
-    border: 4px solid #fff;
+    width: 25px;
+    height: 30px;
+    border: 3px solid #fff;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.4);
+    background: #0a0a12;
 }
 
 .sleep-mouth {
@@ -206,1393 +183,448 @@ html, body {
     top: 5px;
     left: 50%;
     transform: translateX(-50%);
-    opacity: 0;
-}
-
-/* ============================================
-   HAPPY STATE
-   ============================================ */
-.idle-screen.happy .robot-eye .eye-dot {
-    animation: none;
-    opacity: 0;
-}
-
-.idle-screen.happy .happy-eyes {
-    opacity: 1;
-}
-
-/* ============================================
-   YAWN STATE
-   ============================================ */
-.idle-screen.yawning .smile-mouth {
-    opacity: 0;
-}
-
-.idle-screen.yawning .yawn-mouth {
-    opacity: 1;
-    animation: yawnPop 4s ease-in-out;
-}
-
-@keyframes yawnPop {
-    0% { transform: translateX(-50%) scale(0.5); }
-    15% { transform: translateX(-50%) scale(1.1); }
-    25%, 75% { transform: translateX(-50%) scale(1); }
-    100% { transform: translateX(-50%) scale(0.5); }
-}
-
-.idle-screen.yawning .eye-dot {
-    animation: yawnEyes 4s ease-in-out !important;
-}
-
-@keyframes yawnEyes {
-    0%, 100% { transform: scaleY(1); }
-    15%, 85% { transform: scaleY(0.4); }
-}
-
-.idle-screen.yawning .screen-face {
-    animation: yawnTilt 4s ease-in-out;
-}
-
-@keyframes yawnTilt {
-    0%, 100% { transform: translateY(0) rotate(0); }
-    25%, 75% { transform: translateY(-4px) rotate(-2deg); }
-}
-
-/* ============================================
-   SLEEP MODE (11 PM - 8 AM)
-   ============================================ */
-.idle-screen.sleep-mode .screen-face {
-    animation: sleepFloat 5s ease-in-out infinite;
-}
-
-@keyframes sleepFloat {
-    0%, 100% { transform: translateY(0) rotate(-1deg); }
-    50% { transform: translateY(-5px) rotate(1deg); }
-}
-
-.idle-screen.sleep-mode .robot-eye .eye-dot {
-    opacity: 0;
-}
-
-.idle-screen.sleep-mode .sleep-eyes {
-    opacity: 1;
-}
-
-.idle-screen.sleep-mode .smile-mouth {
-    opacity: 0;
-}
-
-.idle-screen.sleep-mode .sleep-mouth {
-    opacity: 1;
-}
-
-/* Screen glow breathing in sleep */
-.idle-screen.sleep-mode .screen-face {
-    box-shadow: 
-        0 0 30px rgba(100, 180, 255, 0.05),
-        inset 0 0 20px rgba(0, 0, 0, 0.5);
-    animation: sleepFloat 5s ease-in-out infinite, screenBreath 4s ease-in-out infinite;
-}
-
-@keyframes screenBreath {
-    0%, 100% {
-        box-shadow: 
-            0 0 20px rgba(100, 180, 255, 0.03),
-            inset 0 0 20px rgba(0, 0, 0, 0.5);
-    }
-    50% {
-        box-shadow: 
-            0 0 35px rgba(100, 180, 255, 0.08),
-            inset 0 0 20px rgba(0, 0, 0, 0.5);
-    }
-}
-
-/* ZZZ Animation */
-.sleep-zzz {
-    position: absolute;
-    top: -10px;
-    right: -25px;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.idle-screen.sleep-mode .sleep-zzz {
-    opacity: 1;
-}
-
-.zzz {
-    position: absolute;
-    color: rgba(150, 200, 255, 0.8);
-    font-weight: bold;
-    font-style: italic;
-    font-family: 'Comic Sans MS', cursive, sans-serif;
-    opacity: 0;
-    text-shadow: 0 0 8px rgba(150, 200, 255, 0.4);
-}
-
-.idle-screen.sleep-mode .z1 {
-    font-size: 0.9rem;
-    animation: zzzFloat 2.5s ease-in-out infinite;
-}
-
-.idle-screen.sleep-mode .z2 {
-    font-size: 1.2rem;
-    animation: zzzFloat 2.5s ease-in-out infinite 0.8s;
-}
-
-.idle-screen.sleep-mode .z3 {
-    font-size: 1.5rem;
-    animation: zzzFloat 2.5s ease-in-out infinite 1.6s;
-}
-
-@keyframes zzzFloat {
-    0% {
-        opacity: 0;
-        transform: translate(0, 0) rotate(-10deg) scale(0.5);
-    }
-    20% {
-        opacity: 1;
-    }
-    80% {
-        opacity: 0.7;
-    }
-    100% {
-        opacity: 0;
-        transform: translate(25px, -45px) rotate(10deg) scale(0.9);
-    }
-}
-
-/* ============================================
-   CLOCK SCREEN - Main Layout
-   ============================================ */
-.clock-screen {
-    display: flex;
-    flex-direction: row;
-    padding: 20px;
-    transition: background 1s ease, color 0.5s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Day Mode - Sunny warm background */
-.clock-screen.day-mode {
-    background: linear-gradient(135deg, #FFF9E6 0%, #FFECB3 30%, #FFE082 100%);
-    color: #000;
-}
-
-.clock-screen.day-mode::before {
-    content: '';
-    position: absolute;
-    top: -100px;
-    left: -100px;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, rgba(255,193,7,0.2) 40%, transparent 70%);
-    animation: sunPulse 4s ease-in-out infinite;
-    pointer-events: none;
-}
-
-@keyframes sunPulse {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-    50% {
-        transform: scale(1.1);
-        opacity: 1;
-    }
-}
-
-/* Night Mode - Dark starry background */
-.clock-screen.night-mode {
-    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0d0d2b 100%);
-    color: #fff;
-}
-
-.clock-screen.night-mode .clock-hours,
-.clock-screen.night-mode .clock-minutes,
-.clock-screen.night-mode .clock-colon,
-.clock-screen.night-mode .clock-date {
-    color: #fff;
-}
-
-.clock-screen.night-mode .action-btn-circle {
-    border-color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.clock-screen.night-mode .action-btn-circle svg {
-    color: #fff;
-}
-
-.clock-screen.night-mode .action-btn-label {
-    color: #fff;
-}
-
-.clock-screen.night-mode .photo-frame {
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.clock-screen.night-mode .photo-frame-text,
-.clock-screen.night-mode .photo-frame-subtext {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-/* Stars Container */
-.stars-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-}
-
-.stars-container.hidden {
     display: none;
-}
-
-.star {
-    position: absolute;
-    width: 4px;
+    width: 20px;
     height: 4px;
     background: #fff;
-    border-radius: 50%;
-    animation: twinkle 2s ease-in-out infinite;
-    box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
 }
 
-.star.small {
-    width: 2px;
-    height: 2px;
-    box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.4);
+/* Happy State */
+.idle-screen.happy .robot-eyes { display: none; }
+.idle-screen.happy .happy-eyes { display: flex; }
+
+/* Yawning State */
+.idle-screen.yawning .smile-mouth { display: none; }
+.idle-screen.yawning .yawn-mouth { display: block; }
+
+/* Sleep State */
+.idle-screen.sleep-mode .robot-eyes { display: none; }
+.idle-screen.sleep-mode .sleep-eyes { display: flex; }
+.idle-screen.sleep-mode .smile-mouth { display: none; }
+.idle-screen.sleep-mode .sleep-mouth { display: block; }
+
+/* ============================================
+   CLOCK SCREEN - Optimized layout for 1024x600
+   ============================================ */
+.clock-screen {
+    background: #f8f9fa;
+    flex-direction: column;
+    padding: 20px;
 }
 
-@keyframes twinkle {
-    0%, 100% {
-        opacity: 0.3;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.2);
-    }
+.clock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+    margin-bottom: 20px;
 }
 
-/* Sun/Moon Icon - Top Left */
-.time-icon {
-    position: absolute;
-    top: -60px;
-    left: -60px;
-    width: 280px;
-    height: 280px;
-    z-index: 10;
+.date-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
-.sun-icon, .moon-icon {
-    position: absolute;
-    top: 0;
-    left: 0;
+.date-day {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2c3e50;
 }
 
-.sun-icon.hidden, .moon-icon.hidden {
-    display: none;
+.date-month {
+    font-size: 18px;
+    color: #34495e;
 }
 
-/* Sun animation */
-.sun-rays {
-    animation: rotateSun 20s linear infinite;
-    transform-origin: 100px 100px;
+.date-year {
+    font-size: 16px;
+    color: #7f8c8d;
 }
 
-@keyframes rotateSun {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.clock-actions {
+    display: flex;
+    gap: 10px;
 }
 
-.sun-glow {
-    animation: sunGlowPulse 3s ease-in-out infinite;
+.action-btn {
+    padding: 8px 16px;
+    background: #fff;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
 }
 
-@keyframes sunGlowPulse {
-    0%, 100% {
-        opacity: 0.8;
-    }
-    50% {
-        opacity: 1;
-    }
+.action-btn:hover {
+    background: #f0f0f0;
 }
 
-/* Clock Left Side */
+.action-btn.active {
+    background: #3498db;
+    color: #fff;
+    border-color: #3498db;
+}
+
+/* Clock Main Content */
+.clock-main {
+    display: flex;
+    flex: 1;
+    gap: 40px;
+    align-items: center;
+}
+
 .clock-left {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding-left: 40px;
-    padding-top: 80px;
-    position: relative;
-    z-index: 5;
-}
-
-.clock-display {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.clock-time-container {
-    display: flex;
-    align-items: baseline;
-}
-
-.clock-hours, .clock-minutes {
-    font-size: 10rem;
-    font-weight: 900;
-    line-height: 1;
-    color: #000;
-    letter-spacing: -0.02em;
-}
-
-.clock-colon {
-    font-size: 8rem;
-    font-weight: 900;
-    color: #000;
-    margin: 0 0.1em;
-    line-height: 1;
-}
-
-.clock-date {
-    font-size: 1.8rem;
-    font-weight: 600;
-    color: #000;
-    margin-top: 1.5rem;
-}
-
-/* Clock Right Side */
-.clock-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: 30px 40px;
-    position: relative;
-    z-index: 5;
+    justify-content: center;
 }
 
-/* Photo Frame */
+.time-display {
+    text-align: center;
+}
+
+.time {
+    font-size: 80px;
+    font-weight: bold;
+    color: #2c3e50;
+    font-family: 'Courier New', monospace; /* Monospace for stable time display */
+    line-height: 1;
+}
+
+.time-icon-container {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.time-icon {
+    font-size: 48px;
+    color: #f39c12;
+}
+
+.time-period {
+    font-size: 20px;
+    color: #7f8c8d;
+    margin-left: 15px;
+}
+
+.clock-right {
+    width: 300px;
+    height: 400px;
+}
+
+/* Photo Frame - Simplified */
 .photo-frame {
     width: 100%;
-    max-width: 400px;
-    aspect-ratio: 16/10;
-    border: 3px solid #000;
+    height: 100%;
+    background: #ecf0f1;
+    border-radius: 15px;
+    position: relative;
+    border: 3px solid #bdc3c7;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fff;
+    overflow: hidden;
 }
 
 .photo-frame-content {
     text-align: center;
+    color: #7f8c8d;
 }
 
 .photo-frame-text {
-    display: block;
-    font-size: 1rem;
-    color: #666;
+    font-size: 18px;
+    margin-bottom: 5px;
 }
 
 .photo-frame-subtext {
-    display: block;
-    font-size: 0.9rem;
-    color: #999;
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    gap: 30px;
-    justify-content: center;
-    padding-bottom: 20px;
-}
-
-.action-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 10px;
-    transition: transform 0.2s;
-}
-
-.action-btn:hover {
-    transform: scale(1.05);
-}
-
-.action-btn:active {
-    transform: scale(0.95);
-}
-
-.action-btn-circle {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    border: 2px solid #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff;
-    transition: background 0.2s;
-}
-
-.action-btn:hover .action-btn-circle {
-    background: #f5f5f5;
-}
-
-.action-btn-circle svg {
-    color: #000;
-}
-
-.action-btn-label {
-    font-size: 0.85rem;
-    color: #000;
-    font-weight: 500;
+    font-size: 14px;
 }
 
 /* ============================================
-   MUSIC SCREEN
+   MESSAGE SCREEN - Optimized for readability
    ============================================ */
-.music-screen {
-    background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%);
+.message-screen {
+    background: #e8f5e8;
+    padding: 40px;
     align-items: center;
     justify-content: center;
-}
-
-.music-content {
-    text-align: center;
-}
-
-.music-icon {
-    margin-bottom: 2rem;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.music-artist {
-    font-size: 1.5rem;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-/* ============================================
-   MESSAGE OVERLAY
-   ============================================ */
-.overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-}
-
-.overlay.hidden {
-    display: none;
-}
-
-.message-overlay {
-    background: rgba(0, 0, 0, 0.8);
-}
-
-.message-container {
-    background: #1a1a2e;
-    border-radius: 16px;
-    padding: 2rem;
-    max-width: 85%;
-    max-height: 70%;
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    color: #fff;
-}
-
-.message-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.message-icon {
-    font-size: 1.5rem;
-}
-
-.message-title {
-    font-size: 1.2rem;
-    font-weight: 600;
 }
 
 .message-content {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 1rem;
-}
-
-.message-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.message-timer {
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.message-buttons {
-    display: flex;
-    gap: 0.75rem;
-}
-
-.message-dismiss {
-    background: #4a4a6a;
-    border: none;
-    color: #fff;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.message-dismiss:hover {
-    background: #5a5a7a;
-}
-
-.message-library-btn {
-    background: #3a5a8a;
-    border: none;
-    color: #fff;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.message-library-btn:hover {
-    background: #4a6a9a;
-}
-
-/* ============================================
-   MESSAGE LIBRARY
-   ============================================ */
-.message-library-overlay {
-    background: rgba(0, 0, 0, 0.85);
-}
-
-.message-library-container {
-    background: #1a1a2e;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 80%;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    color: #fff;
-    overflow: hidden;
-}
-
-.message-library-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.message-library-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin: 0;
-}
-
-.message-library-close {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.25rem;
-    line-height: 1;
-    transition: color 0.2s;
-}
-
-.message-library-close:hover {
-    color: #fff;
-}
-
-.message-library-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem;
-}
-
-.message-library-empty {
     text-align: center;
-    color: rgba(255, 255, 255, 0.4);
-    padding: 3rem 1rem;
-    font-size: 1rem;
+    max-width: 800px;
 }
 
-.message-library-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    transition: background 0.2s;
+.message-title {
+    font-size: 32px;
+    color: #27ae60;
+    margin-bottom: 20px;
+    font-weight: bold;
 }
 
-.message-library-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.message-library-item:last-child {
-    margin-bottom: 0;
-}
-
-.message-library-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
-.message-library-from {
-    font-weight: 600;
-    color: #7ab3ff;
-    font-size: 0.95rem;
-}
-
-.message-library-date {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
-}
-
-.message-library-text {
-    font-size: 1rem;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.message-library-scheduled {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.3);
-    margin-top: 0.5rem;
-    font-style: italic;
-}
-
-/* ============================================
-   SETTINGS PANEL
-   ============================================ */
-.settings-panel {
-    background: rgba(0, 0, 0, 0.5);
-}
-
-.settings-container {
-    background: #fff;
-    border-radius: 16px;
-    padding: 0;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-}
-
-.settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #eee;
-}
-
-.settings-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #000;
-}
-
-.settings-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #666;
-    padding: 0.25rem;
-    line-height: 1;
-}
-
-.settings-close:hover {
-    color: #000;
-}
-
-.settings-content {
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-/* Control Groups */
-.control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.control-label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1rem;
-    color: #000;
-}
-
-.control-icon {
-    font-size: 1.2rem;
-    width: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.control-icon svg {
-    color: #000;
-}
-
-.control-value {
-    margin-left: auto;
-    color: #666;
-    font-weight: 500;
-}
-
-.control-spacer {
-    flex: 1;
-}
-
-/* Toggle Switch */
-.toggle-switch {
-    position: relative;
-    width: 50px;
-    height: 28px;
-}
-
-.toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    border-radius: 28px;
-    transition: 0.3s;
-}
-
-.toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 22px;
-    width: 22px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    border-radius: 50%;
-    transition: 0.3s;
-}
-
-.toggle-switch input:checked + .toggle-slider {
-    background-color: #007AFF;
-}
-
-.toggle-switch input:checked + .toggle-slider:before {
-    transform: translateX(22px);
-}
-
-/* Slider */
-.slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 8px;
-    border-radius: 4px;
-    background: #e0e0e0;
-    outline: none;
-}
-
-.slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #007AFF;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.slider::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #007AFF;
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-/* ============================================
-   RESPONSIVE
-   ============================================ */
-@media (max-width: 900px) {
-    .clock-screen {
-        flex-direction: column;
-    }
-    
-    .clock-left {
-        padding-left: 20px;
-        padding-top: 120px;
-        flex: none;
-    }
-    
-    .clock-hours, .clock-minutes {
-        font-size: 6rem;
-    }
-    
-    .clock-colon {
-        font-size: 5rem;
-    }
-    
-    .clock-date {
-        font-size: 1.3rem;
-    }
-    
-    .clock-right {
-        flex: 1;
-        padding: 20px;
-    }
-    
-    .photo-frame {
-        max-width: 300px;
-    }
-    
-    .action-buttons {
-        gap: 15px;
-    }
-    
-    .action-btn-circle {
-        width: 55px;
-        height: 55px;
-    }
-}
-
-@media (max-width: 480px) {
-    .clock-hours, .clock-minutes {
-        font-size: 4rem;
-    }
-    
-    .clock-colon {
-        font-size: 3rem;
-    }
-    
-    .clock-date {
-        font-size: 1rem;
-    }
-    
-    .message-container {
-        padding: 1.5rem;
-    }
-    
-    .action-btn-circle {
-        width: 50px;
-        height: 50px;
-    }
-    
-    .action-btn-label {
-        font-size: 0.75rem;
-    }
-}
-
-/* ============================================
-   GAMES - Game Selection Overlay
-   ============================================ */
-.game-selection-overlay {
-    background: rgba(10, 10, 18, 0.98);
-    z-index: 1000;
-}
-
-.game-selection-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-}
-
-.game-selection-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.message-text {
+    font-size: 24px;
+    color: #2c3e50;
+    line-height: 1.4;
     margin-bottom: 30px;
 }
 
-.game-selection-title {
-    font-size: 1.8rem;
-    color: #fff;
-    margin: 0;
-}
-
-.game-selection-close {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: #fff;
-    font-size: 1.5rem;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    cursor: pointer;
+.message-meta {
+    font-size: 16px;
+    color: #7f8c8d;
     display: flex;
-    align-items: center;
     justify-content: center;
-    transition: background 0.2s;
-}
-
-.game-selection-close:active {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.game-selection-grid {
-    display: flex;
-    flex-wrap: wrap;
     gap: 20px;
-    justify-content: center;
-    align-items: center;
-    flex: 1;
-}
-
-.game-select-btn {
-    background: linear-gradient(145deg, #1e2a3a, #16202e);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 30px;
-    min-width: 140px;
-    min-height: 160px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-
-.game-select-btn:active {
-    transform: scale(0.95);
-    border-color: rgba(100, 180, 255, 0.5);
-    box-shadow: 0 0 20px rgba(100, 180, 255, 0.2);
-}
-
-.game-select-icon {
-    font-size: 3rem;
-}
-
-.game-select-label {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #fff;
-}
-
-.game-select-desc {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.5);
 }
 
 /* ============================================
-   GAMES - Game Container
+   MUSIC SCREEN - Clean layout for 1024x600
    ============================================ */
-.game-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #0a0a12;
-    z-index: 1001;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-}
-
-.game-container.hidden {
-    display: none;
-}
-
-.game-exit-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
+.music-screen {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px;
     color: #fff;
-    font-size: 1.5rem;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
 }
 
-.game-exit-btn:active {
-    background: rgba(255, 100, 100, 0.3);
-}
-
-/* Snake Game Styles */
-.snake-game {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-}
-
-.snake-header {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px 15px;
-}
-
-.snake-score {
-    font-size: 1.3rem;
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 20px;
-    border-radius: 20px;
-}
-
-#snake-canvas {
-    border-radius: 10px;
-    box-shadow: 0 0 30px rgba(74, 222, 128, 0.1);
-}
-
-.snake-touch-hint {
-    margin-top: 15px;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.4);
-}
-
-/* Tic Tac Toe Styles */
-.tictactoe-game {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-}
-
-.tictactoe-header {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px 20px;
-}
-
-.tictactoe-status {
-    font-size: 1.2rem;
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 20px;
-    border-radius: 20px;
-}
-
-#tictactoe-canvas {
-    border-radius: 10px;
-    box-shadow: 0 0 30px rgba(100, 180, 255, 0.1);
-}
-
-/* Game Over Overlay */
-.game-over-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(10, 10, 18, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-}
-
-.game-over-overlay.hidden {
-    display: none;
-}
-
-.game-over-content {
+.music-header {
     text-align: center;
-    padding: 30px;
+    margin-bottom: 40px;
 }
 
-.game-over-content h2 {
-    font-size: 2rem;
-    color: #fff;
-    margin: 0 0 20px 0;
+.music-title {
+    font-size: 36px;
+    margin-bottom: 10px;
 }
 
-.game-over-content p {
-    font-size: 1.2rem;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0 0 30px 0;
+.music-artist {
+    font-size: 20px;
+    opacity: 0.8;
 }
 
-.game-over-buttons {
+.music-controls {
     display: flex;
-    gap: 15px;
     justify-content: center;
-    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 40px;
 }
 
-.game-btn {
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
-    border: none;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 600;
-    padding: 15px 30px;
-    border-radius: 12px;
-    cursor: pointer;
-    min-width: 120px;
-    transition: transform 0.2s, opacity 0.2s;
-}
-
-.game-btn:active {
-    transform: scale(0.95);
-}
-
-.game-btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.game-btn.secondary:active {
+.music-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.music-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.music-settings {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+}
+
+.volume-control, .brightness-control {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.control-label {
+    font-size: 16px;
+    min-width: 80px;
+}
+
+.control-slider {
+    width: 150px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+.control-value {
+    font-size: 16px;
+    min-width: 40px;
+    text-align: right;
 }
 
 /* ============================================
-   WORDLE GAME
+   GAMES SCREEN - Grid layout for 1024x600
    ============================================ */
-.wordle-game {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-    overflow: hidden;
+.games-screen {
+    background: #f39c12;
+    padding: 30px;
 }
 
-.wordle-header {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px 10px;
-}
-
-.wordle-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.wordle-spacer {
-    width: 50px;
-}
-
-.wordle-grid-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 0;
-    padding: 5px 0;
-}
-
-.wordle-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.wordle-row {
-    display: flex;
-    gap: 6px;
-}
-
-.wordle-row.shake {
-    animation: wordleShake 0.5s ease;
-}
-
-@keyframes wordleShake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-8px); }
-    40% { transform: translateX(8px); }
-    60% { transform: translateX(-6px); }
-    80% { transform: translateX(6px); }
-}
-
-.wordle-tile {
-    width: 48px;
-    height: 48px;
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.6rem;
-    font-weight: 700;
+.games-header {
+    text-align: center;
     color: #fff;
-    background: rgba(255, 255, 255, 0.03);
-    text-transform: uppercase;
-    transition: border-color 0.15s, transform 0.15s, background-color 0.3s;
+    margin-bottom: 30px;
 }
 
-.wordle-tile.filled {
-    border-color: rgba(255, 255, 255, 0.35);
-    transform: scale(1.02);
+.games-title {
+    font-size: 32px;
+    margin-bottom: 10px;
 }
 
-.wordle-tile.flip {
-    animation: wordleFlip 0.5s ease;
+.games-subtitle {
+    font-size: 16px;
+    opacity: 0.8;
 }
 
-@keyframes wordleFlip {
-    0% { transform: rotateX(0deg); }
-    50% { transform: rotateX(90deg); }
-    100% { transform: rotateX(0deg); }
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
-.wordle-tile.revealed {
-    border-color: transparent;
-}
-
-.wordle-tile.correct {
-    background: #538d4e;
-}
-
-.wordle-tile.present {
-    background: #b59f3b;
-}
-
-.wordle-tile.absent {
-    background: #3a3a4c;
-}
-
-/* Wordle Keyboard */
-.wordle-keyboard {
-    width: 100%;
-    max-width: 380px;
-    padding: 10px 5px 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.wordle-keyboard-row {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-}
-
-.wordle-key {
-    min-width: 28px;
-    height: 52px;
-    border: none;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 600;
+.game-tile {
+    background: #fff;
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s, transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+    border: 3px solid transparent;
 }
 
-.wordle-key.wide {
-    min-width: 52px;
-    font-size: 0.85rem;
-    padding: 0 8px;
+.game-tile:hover {
+    border-color: #e67e22;
 }
 
-.wordle-key:active,
-.wordle-key.pressed {
-    transform: scale(0.94);
-    background: rgba(255, 255, 255, 0.25);
+.game-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    display: block;
 }
 
-.wordle-key.correct {
-    background: #538d4e;
+.game-name {
+    font-size: 18px;
+    color: #2c3e50;
+    font-weight: bold;
 }
 
-.wordle-key.present {
-    background: #b59f3b;
+/* ============================================
+   SETTINGS SCREEN - Simple layout
+   ============================================ */
+.settings-screen {
+    background: #34495e;
+    padding: 30px;
+    color: #fff;
 }
 
-.wordle-key.absent {
-    background: #3a3a4c;
+.settings-header {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-/* Wordle Result */
-.wordle-result-content {
-    background: rgba(20, 20, 35, 0.98);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 40px 30px;
+.settings-title {
+    font-size: 32px;
 }
 
-.wordle-result-word {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 25px;
-    letter-spacing: 2px;
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.settings-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.settings-section h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+.settings-item {
+    margin-bottom: 15px;
+}
+
+.settings-item label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.settings-input, .settings-select {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.settings-btn {
+    background: #3498db;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.settings-btn:hover {
+    background: #2980b9;
+}
+
+/* ============================================
+   RESPONSIVE OPTIMIZATIONS for 1024x600
+   ============================================ */
+
+/* Ensure no scrollbars appear */
+body {
+    overflow: hidden !important;
+}
+
+/* Remove any transforms that might cause rendering issues */
+* {
+    will-change: auto;
+    transform: translateZ(0); /* Force hardware layer when available */
+}
+
+/* Optimize text rendering */
+h1, h2, h3, h4, h5, h6 {
+    text-rendering: optimizeSpeed;
+}
+
+/* Remove box-shadows for better performance */
+.simple-mode * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+/* Performance mode - minimal styles */
+.performance-mode {
+    background: #f5f5f5 !important;
+}
+
+.performance-mode * {
+    background: inherit !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
 }
