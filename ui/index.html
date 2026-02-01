@@ -2,42 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1024, height=600, initial-scale=1.0, user-scalable=no">
-    <meta name="display-mode" content="elecrow-7inch">
-    <meta name="performance-mode" content="enabled">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Frame</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Performance optimizations for 16-bit color depth */
-        * {
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-        }
-        
-        /* Disable smooth scrolling for performance */
-        html {
-            scroll-behavior: auto;
-        }
-        
-        /* Force software rendering optimizations */
-        canvas, video, img {
-            image-rendering: pixelated;
-        }
-        
-        /* Prevent text selection for touch interface */
-        * {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        
-        /* Optimize repainting */
-        * {
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-        }
-    </style>
 </head>
 <body>
     <!-- Main Container -->
@@ -193,12 +160,11 @@
             
             <!-- Right Side Content -->
             <div class="clock-right">
-                <!-- Photo Frame -->
+                <!-- Photo Frame Placeholder -->
                 <div id="photo-frame" class="photo-frame">
-                    <!-- Placeholder state -->
-                    <div id="photo-frame-placeholder" class="photo-frame-content">
+                    <div class="photo-frame-content">
                         <span class="photo-frame-text">Photo Frame</span>
-                        <span class="photo-frame-subtext">Currently Disabled</span>
+                        <span class="photo-frame-subtext">Loop</span>
                     </div>
                 </div>
                 
@@ -415,10 +381,10 @@
     </div>
     
     <!-- Game Scripts -->
-    <script src="/games/game_manager.js"></script>
-    <script src="/games/snake.js"></script>
-    <script src="/games/tic_tac_toe.js"></script>
-    <script src="/games/wordle.js"></script>
+    <script src="../games/game_manager.js"></script>
+    <script src="../games/snake.js"></script>
+    <script src="../games/tic_tac_toe.js"></script>
+    <script src="../games/wordle.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -1,54 +1,18 @@
 /**
- * Smart Frame - Frontend Application - Optimized for 1024x600 Display
+ * Smart Frame - Frontend Application
  * Handles UI updates, polling, and user interactions.
  */
 
-// Configuration - Optimized for lower-end hardware
+// Configuration
 const CONFIG = {
     API_BASE_URL: '',  // Same origin
-    POLL_INTERVAL: 2000,  // Increased to 2 seconds for better performance
-    MESSAGE_POLL_INTERVAL: 10000,  // Increased to 10 seconds
+    POLL_INTERVAL: 1000,  // 1 second
+    MESSAGE_POLL_INTERVAL: 5000,  // 5 seconds
     MESSAGE_AUTO_DISMISS: 300,  // 5 minutes in seconds
     // Day/Night thresholds (24-hour format)
     DAY_START_HOUR: 6,   // 6 AM
     NIGHT_START_HOUR: 18, // 6 PM
 };
-
-// Performance optimizations
-const PERFORMANCE_MODE = true; // Enable performance optimizations
-const REDUCED_ANIMATIONS = true; // Disable complex animations
-
-// Performance monitoring for 1024x600 display
-let performanceMetrics = {
-    lastFrameTime: performance.now(),
-    frameCount: 0,
-    avgFPS: 0
-};
-
-function trackPerformance() {
-    if (!PERFORMANCE_MODE) return;
-    
-    const now = performance.now();
-    performanceMetrics.frameCount++;
-    
-    if (performanceMetrics.frameCount % 60 === 0) { // Check every 60 frames
-        const deltaTime = now - performanceMetrics.lastFrameTime;
-        performanceMetrics.avgFPS = (60000 / deltaTime).toFixed(1);
-        performanceMetrics.lastFrameTime = now;
-        
-        // Log performance if FPS is low
-        if (performanceMetrics.avgFPS < 30) {
-            console.warn(`Low FPS detected: ${performanceMetrics.avgFPS} fps`);
-        }
-    }
-    
-    requestAnimationFrame(trackPerformance);
-}
-
-// Start performance tracking
-if (PERFORMANCE_MODE) {
-    trackPerformance();
-}
 
 // State
 let currentState = 'IDLE';
@@ -136,45 +100,27 @@ const HAPPY_DURATION = 3000; // 3 seconds
  * Initialize the application
  */
 function init() {
-    // Apply performance optimizations
-    if (PERFORMANCE_MODE) {
-        document.body.classList.add('performance-mode');
-        // Disable animations if needed
-        if (REDUCED_ANIMATIONS) {
-            const style = document.createElement('style');
-            style.textContent = `
-                *, *::before, *::after {
-                    animation-duration: 0.01ms !important;
-                    animation-delay: -0.01ms !important;
-                    transition-duration: 0.01ms !important;
-                    transition-delay: -0.01ms !important;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-    
     // Cache DOM elements
     cacheElements();
     
     // Setup event listeners
     setupEventListeners();
     
-    // Start polling with reduced frequency for performance
+    // Start polling
     startPolling();
     
     // Start clock update
     updateClock();
     setInterval(updateClock, 1000);
     
-    // Update sun/moon icon less frequently
+    // Update sun/moon icon
     updateTimeIcon();
-    setInterval(updateTimeIcon, 300000); // Check every 5 minutes instead of 1
+    setInterval(updateTimeIcon, 60000); // Check every minute
     
-    // Initialize idle face animations (simplified)
+    // Initialize idle face animations
     initIdleFace();
     
-    console.log('Smart Frame initialized for 1024x600 display');
+    console.log('Smart Frame initialized');
 }
 
 /**
@@ -342,7 +288,6 @@ function setupEventListeners() {
             }
         });
     }
-    
 }
 
 /**
@@ -819,29 +764,24 @@ async function setVolume(level) {
 // ============================================================================
 
 /**
- * Initialize idle face animations - Simplified for performance
+ * Initialize idle face animations
  */
 function initIdleFace() {
-    if (REDUCED_ANIMATIONS) {
-        // Minimal face updates for performance
-        updateIdleFaceState();
-        setInterval(updateIdleFaceState, 300000); // Every 5 minutes
-        return;
-    }
-    
     // Update face state immediately
     updateIdleFaceState();
     
-    // Check face state less frequently for performance
-    setInterval(updateIdleFaceState, 120000); // Every 2 minutes
+    // Check face state every minute
+    setInterval(updateIdleFaceState, 60000);
     
-    // Check for expressions less frequently
-    setInterval(checkYawnTrigger, 120000); // Every 2 minutes
-    setInterval(checkHappyTrigger, 120000); // Every 2 minutes
+    // Check for yawn trigger every 30 seconds
+    setInterval(checkYawnTrigger, 30000);
+    
+    // Check for happy expression every 30 seconds
+    setInterval(checkHappyTrigger, 30000);
 }
 
 /**
- * Update idle face state based on time of day - Simplified
+ * Update idle face state based on time of day
  * Sleep mode: 11 PM (23:00) to 8 AM (08:00)
  */
 function updateIdleFaceState() {
@@ -854,34 +794,32 @@ function updateIdleFaceState() {
     // Sleep mode: 11 PM (23) to 8 AM (8)
     const isSleepTime = hour >= 23 || hour < 8;
     
-    // Simple state switching without transitions
-    idleScreen.className = 'screen idle-screen';
-    if (idleScreen.classList.contains('active')) {
-        idleScreen.classList.add('active');
-    }
-    
     if (isSleepTime) {
         idleScreen.classList.add('sleep-mode');
+        idleScreen.classList.remove('yawning');
+        idleScreen.classList.remove('happy');
+    } else {
+        idleScreen.classList.remove('sleep-mode');
     }
 }
 
 /**
- * Check if it's time to trigger a yawn - Simplified
+ * Check if it's time to trigger a yawn
+ * Yawns every 20 minutes when not in sleep mode
  */
 function checkYawnTrigger() {
-    if (REDUCED_ANIMATIONS) return; // Skip animations in performance mode
-    
     const idleScreen = elements.screens.idle;
     if (!idleScreen) return;
     
     // Don't yawn if in sleep mode or not on idle screen
     if (idleScreen.classList.contains('sleep-mode')) return;
     if (!idleScreen.classList.contains('active')) return;
+    if (idleScreen.classList.contains('happy')) return;
     
     const now = Date.now();
     
-    // Check if enough time has passed since last yawn
-    if (now - lastYawnTime >= YAWN_INTERVAL * 2) { // Less frequent yawning
+    // Check if 20 minutes have passed since last yawn
+    if (now - lastYawnTime >= YAWN_INTERVAL) {
         triggerYawn();
         lastYawnTime = now;
     }
@@ -965,11 +903,6 @@ function toggleSleepMode() {
     
     idleScreen.classList.toggle('sleep-mode');
 }
-
-
-// ============================================================================
-
-
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', init);

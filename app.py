@@ -7,8 +7,6 @@ import logging
 import os
 import yaml
 from flask import Flask, jsonify, request, send_from_directory
-import subprocess
-import threading
 
 # Import backend modules
 from backend.state_manager import get_state_manager
@@ -25,7 +23,8 @@ from config.constants import STATE_IDLE, STATE_CLOCK, STATE_MUSIC
 # Initialize Flask app
 app = Flask(__name__, static_folder='ui', static_url_path='')
 @app.route("/")
-
+import subprocess
+import threading
 def root():
     return app.send_static_file("index.html")
 
@@ -62,12 +61,6 @@ music_controller = get_music_controller()
 def serve_index():
     """Serve the main UI page."""
     return send_from_directory('ui', 'index.html')
-
-
-@app.route('/games/<path:filename>')
-def serve_games(filename):
-    """Serve game files from games directory."""
-    return send_from_directory('games', filename)
 
 
 @app.route('/<path:filename>')
@@ -364,9 +357,6 @@ def toggle_bluetooth():
         'success': success,
         'enabled': enabled,
     })
-
-
-
 
 
 # ============================================================================
