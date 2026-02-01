@@ -12,8 +12,8 @@ import time
 # Configure logging for this module
 logger = logging.getLogger(__name__)
 
-# Update interval in seconds (10 minutes)
-UPDATE_INTERVAL = 600
+# Update interval in seconds (2 minutes)
+UPDATE_INTERVAL = 120
 
 
 class GitUpdater:
@@ -34,7 +34,7 @@ class GitUpdater:
         
         Args:
             repo_path: Absolute path to the git repository root
-            interval: Seconds between update checks (default: 600)
+            interval: Seconds between update checks (default: 120)
         """
         self.repo_path = repo_path
         self.interval = interval
