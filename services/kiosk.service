@@ -1,0 +1,73 @@
+# Smart Frame Kiosk Service
+# =========================
+# Systemd service for running Smart Frame with PyQt5/QtWebEngine
+#
+# Installation:
+#   sudo cp services/kiosk.service /etc/systemd/system/kiosk.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable kiosk.service
+#   sudo systemctl start kiosk.service
+#
+# Logs:
+#   journalctl -u kiosk.service -f
+
+[Unit]
+Description=Smart Frame Kiosk (PyQt5)
+Documentation=https://github.com/yourrepo/smart_frame
+After=graphical.target network.target
+Wants=graphical.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+# Service type - simple for foreground apps
+Type=simple
+
+# User to run as (must have X11 access)
+User=raspberrypi4
+Group=raspberrypi4
+
+# Working directory
+WorkingDirectory=/home/raspberrypi4/projects/smart_frame
+
+# Environment variables for X11 display
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/raspberrypi4/.Xauthority
+
+# Qt/WebEngine environment for software rendering (no GPU)
+Environment=QT_QPA_PLATFORM=xcb
+Environment=QT_WEBENGINE_DISABLE_GPU=1
+Environment=QTWEBENGINE_DISABLE_SANDBOX=1
+Environment=LIBGL_ALWAYS_SOFTWARE=1
+
+# Memory optimization
+Environment=MALLOC_TRIM_THRESHOLD_=65536
+
+# Disable core dumps
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# The command to run
+ExecStart=/usr/bin/python3 /home/raspberrypi4/projects/smart_frame/qt_launcher.py
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Give time for clean shutdown
+TimeoutStopSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=smart-frame
+
+# Security hardening (optional but recommended)
+NoNewPrivileges=false
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/raspberrypi4/projects/smart_frame/data
+ReadWritePaths=/home/raspberrypi4/projects/smart_frame/messages
+PrivateTmp=true
+
+[Install]
+WantedBy=graphical.target
