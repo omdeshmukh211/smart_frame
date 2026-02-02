@@ -6,5 +6,6 @@ python-dateutil
 schedule
 vosk
 pyaudio
+Pillow>=9.0.0  # For image handling and optimization (photo slideshow)
 # Optional for TTS (uncomment if using):
 # pyttsx3
