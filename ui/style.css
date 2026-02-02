@@ -1774,3 +1774,70 @@ html, body {
         backface-visibility: hidden;
     }
 }
+
+/* ============================================================================
+   PHOTO SLIDESHOW STYLES
+   ============================================================================ */
+
+/* Photo container - holds both current and next images for crossfade */
+.photo-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+/* Photo images - positioned absolutely for crossfade effect */
+.photo-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Scale to fit while maintaining aspect ratio */
+    object-position: center;
+    transition: opacity 1s ease-in-out;
+    pointer-events: none; /* Let clicks pass through to container */
+}
+
+/* Current image is visible */
+.photo-image.current {
+    opacity: 1;
+    z-index: 1;
+}
+
+/* Next image starts hidden */
+.photo-image.next {
+    opacity: 0;
+    z-index: 2;
+}
+
+/* When next image becomes visible, fade it in */
+.photo-image.next.visible {
+    opacity: 1;
+}
+
+/* Override placeholder styles when photos are loaded */
+.photo-frame:has(.photo-container) .photo-frame-content {
+    display: none;
+}
+
+/* Smooth rendering for images on Raspberry Pi */
+.photo-image {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* Add subtle loading state */
+.photo-image:not([src]) {
+    background: #f0f0f0;
+}
+
+/* Performance optimization for RPi */
+.photo-container,
+.photo-image {
+    will-change: opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}

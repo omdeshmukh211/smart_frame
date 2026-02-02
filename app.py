@@ -14,6 +14,7 @@ import threading
 from backend.state_manager import get_state_manager
 from backend.message_manager import get_message_manager
 from backend.music_controller import get_music_controller
+from backend.photo_manager import get_photo_manager
 from backend import system_controls
 from backend.git_updater import start_git_updater
 from backend.scheduled_message_manager import start_scheduled_message_manager
@@ -51,6 +52,7 @@ config = load_config()
 state_manager = get_state_manager(config.get('clock_timeout', 120))
 message_manager = get_message_manager(config.get('message_timeout', 300))
 music_controller = get_music_controller()
+photo_manager = get_photo_manager(config.get('photos_dir', '/home/raspberrypi4/projects/smart_frame/photos'))
 
 
 # ============================================================================
@@ -362,6 +364,142 @@ def toggle_bluetooth():
     return jsonify({
         'success': success,
         'enabled': enabled,
+    })
+
+
+# ============================================================================
+# Photo Slideshow API Routes
+# ============================================================================
+
+@app.route('/api/photos/current', methods=['GET'])
+def get_current_photo():
+    """
+    Get the current photo in the slideshow.
+    
+    Returns:
+        JSON with current photo info
+    """
+    current_photo = photo_manager.get_current_photo()
+    
+    if current_photo is None:
+        return jsonify({
+            'success': False,
+            'error': 'No photos available',
+            'photo': None,
+            'index': 0,
+            'total': 0,
+        })
+    
+    return jsonify({
+        'success': True,
+        'photo': current_photo,
+        'index': photo_manager.current_index,
+        'total': photo_manager.get_photo_count(),
+    })
+
+
+@app.route('/api/photos/next', methods=['POST'])
+def advance_to_next_photo():
+    """
+    Advance to the next photo in the slideshow.
+    
+    Returns:
+        JSON with next photo info
+    """
+    next_photo = photo_manager.get_next_photo()
+    
+    if next_photo is None:
+        return jsonify({
+            'success': False,
+            'error': 'No photos available',
+            'photo': None,
+            'index': 0,
+            'total': 0,
+        })
+    
+    return jsonify({
+        'success': True,
+        'photo': next_photo,
+        'index': photo_manager.current_index,
+        'total': photo_manager.get_photo_count(),
+    })
+
+
+@app.route('/api/photos/previous', methods=['POST'])
+def go_to_previous_photo():
+    """
+    Go back to the previous photo in the slideshow.
+    
+    Returns:
+        JSON with previous photo info
+    """
+    prev_photo = photo_manager.get_previous_photo()
+    
+    if prev_photo is None:
+        return jsonify({
+            'success': False,
+            'error': 'No photos available',
+            'photo': None,
+            'index': 0,
+            'total': 0,
+        })
+    
+    return jsonify({
+        'success': True,
+        'photo': prev_photo,
+        'index': photo_manager.current_index,
+        'total': photo_manager.get_photo_count(),
+    })
+
+
+@app.route('/photos/<path:filename>')
+def serve_photo(filename):
+    """
+    Serve a photo file from the photos directory.
+    
+    Args:
+        filename: Photo filename (relative to photos directory)
+    
+    Returns:
+        Photo file
+    """
+    try:
+        # Get the photos directory path
+        photos_dir = photo_manager.photos_dir
+        
+        # Security: ensure the file exists and is within the photos directory
+        photo_path = photo_manager.get_photo_path(filename)
+        
+        if not photo_path.exists() or not photo_path.is_file():
+            return jsonify({
+                'success': False,
+                'error': 'Photo not found',
+            }), 404
+        
+        # Send the file
+        return send_from_directory(str(photos_dir), filename)
+        
+    except Exception as e:
+        logging.error(f"Error serving photo {filename}: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to serve photo',
+        }), 500
+
+
+@app.route('/api/photos/rescan', methods=['POST'])
+def rescan_photos():
+    """
+    Rescan the photos directory to pick up new/removed photos.
+    
+    Returns:
+        JSON with scan results
+    """
+    count = photo_manager.rescan()
+    
+    return jsonify({
+        'success': True,
+        'count': count,
     })
 
 
