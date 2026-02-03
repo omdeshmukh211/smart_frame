@@ -45,7 +45,7 @@ os.environ['GALLIUM_DRIVER'] = 'llvmpipe'
 os.environ['QT_XCB_GL_INTEGRATION'] = 'none'
 
 # Qt/WebEngine settings
-os.environ['QT_QPA_PLATFORM'] = 'xcb'  # X11 backend
+os.environ['QT_QPA_PLATFORM'] = 'windows'  # X11 backend
 os.environ['QTWEBENGINE_DISABLE_SANDBOX'] = '1'  # Required for running as service
 
 # Chromium flags for QtWebEngine

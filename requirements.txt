@@ -7,5 +7,7 @@ schedule
 vosk
 pyaudio
 Pillow>=9.0.0  # For image handling and optimization (photo slideshow)
+yt-dlp  # YouTube music streaming and search
 # Optional for TTS (uncomment if using):
 # pyttsx3
+PyQt5

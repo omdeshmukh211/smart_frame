@@ -57,7 +57,6 @@ const elements = {
     },
     buttons: {
         music: null,
-        search: null,
         sleep: null,
         settings: null,
         games: null,
@@ -106,6 +105,11 @@ function init() {
     // Setup event listeners
     setupEventListeners();
     
+    // Initialize music player
+    if (window.MusicPlayer) {
+        MusicPlayer.init();
+    }
+    
     // Start polling
     startPolling();
     
@@ -153,7 +157,6 @@ function cacheElements() {
     elements.messageLibrary.close = document.getElementById('message-library-close');
     
     elements.buttons.music = document.getElementById('btn-music');
-    elements.buttons.search = document.getElementById('btn-search');
     elements.buttons.sleep = document.getElementById('btn-sleep');
     elements.buttons.settings = document.getElementById('btn-settings');
     
@@ -201,7 +204,6 @@ function setupEventListeners() {
     
     // Action buttons
     elements.buttons.music.addEventListener('click', handleMusicButton);
-    elements.buttons.search.addEventListener('click', handleSearchButton);
     elements.buttons.sleep.addEventListener('click', handleSleepButton);
     elements.buttons.settings.addEventListener('click', openSettings);
     elements.buttons.messages.addEventListener('click', openMessageLibrary);
@@ -316,32 +318,15 @@ async function handleIdleTap() {
 }
 
 /**
- * Handle Music button - open YouTube Music
+ * Handle Music button - open music player overlay
  */
 async function handleMusicButton() {
-    try {
-        const response = await fetch('/music/play', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            updateState(data.state);
-        }
-    } catch (error) {
-        console.error('Music request failed:', error);
+    // Open the new lightweight music player overlay
+    if (window.MusicPlayer) {
+        MusicPlayer.open();
+    } else {
+        console.error('MusicPlayer not initialized');
     }
-}
-
-/**
- * Handle Search button - open web search
- */
-function handleSearchButton() {
-    // Open a web search in a new window/tab
-    // Could be Google, DuckDuckGo, or a custom search page
-    window.open('https://www.google.com', '_blank');
 }
 
 /**
@@ -349,8 +334,13 @@ function handleSearchButton() {
  */
 async function handleSleepButton() {
     try {
-        // If music is playing, stop it first
-        await fetch('/music/stop', {
+        // Stop music player if active
+        if (window.MusicPlayer) {
+            await MusicPlayer.stop();
+        }
+        
+        // If music is playing, stop it first (API call)
+        await fetch('/api/music/stop', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
         });
