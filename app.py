@@ -14,6 +14,7 @@ import threading
 from backend.state_manager import get_state_manager
 from backend.message_manager import get_message_manager
 from backend.music_controller import get_music_controller
+from backend.music_player import get_music_player  # New lightweight music player
 from backend.photo_manager import get_photo_manager
 from backend import system_controls
 from backend.git_updater import start_git_updater
@@ -51,7 +52,8 @@ config = load_config()
 # Initialize managers with config
 state_manager = get_state_manager(config.get('clock_timeout', 120))
 message_manager = get_message_manager(config.get('message_timeout', 300))
-music_controller = get_music_controller()
+music_controller = get_music_controller()  # Legacy Chromium-based controller
+music_player = get_music_player()  # New lightweight YouTube music player
 photo_manager = get_photo_manager(config.get('photos_dir', '/home/raspberrypi4/projects/smart_frame/photos'))
 
 
@@ -211,13 +213,185 @@ def get_message_history():
 
 
 # ============================================================================
-# Music API Routes
+# Music API Routes (New Lightweight Player)
+# ============================================================================
+
+@app.route('/api/music/search', methods=['POST'])
+def music_search():
+    """
+    Search YouTube and play a song.
+    
+    Request body:
+        { "query": "song name or artist" }
+    
+    Returns:
+        JSON with track info and status
+    """
+    data = request.get_json() or {}
+    query = data.get('query', '').strip()
+    
+    if not query:
+        return jsonify({
+            'success': False,
+            'error': 'Query is required',
+        }), 400
+    
+    success = music_player.search_and_play(query)
+    
+    if success:
+        state_manager.set_state(STATE_MUSIC)
+        status = music_player.get_status()
+        return jsonify({
+            'success': True,
+            'state': STATE_MUSIC,
+            'status': status,
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Failed to find or play track',
+        }), 500
+
+
+@app.route('/api/music/play', methods=['POST'])
+def music_play():
+    """
+    Resume playback (unpause).
+    
+    Returns:
+        JSON confirmation
+    """
+    success = music_player.resume()
+    
+    return jsonify({
+        'success': success,
+        'status': music_player.get_status(),
+    })
+
+
+@app.route('/api/music/pause', methods=['POST'])
+def music_pause():
+    """
+    Pause playback.
+    
+    Returns:
+        JSON confirmation
+    """
+    success = music_player.pause()
+    
+    return jsonify({
+        'success': success,
+        'status': music_player.get_status(),
+    })
+
+
+@app.route('/api/music/next', methods=['POST'])
+def music_next():
+    """
+    Skip to next track.
+    
+    Returns:
+        JSON confirmation
+    """
+    success = music_player.next_track()
+    
+    return jsonify({
+        'success': success,
+        'status': music_player.get_status(),
+    })
+
+
+@app.route('/api/music/previous', methods=['POST'])
+def music_previous():
+    """
+    Go to previous track.
+    
+    Returns:
+        JSON confirmation
+    """
+    success = music_player.previous_track()
+    
+    return jsonify({
+        'success': success,
+        'status': music_player.get_status(),
+    })
+
+
+@app.route('/api/music/stop', methods=['POST'])
+def music_stop():
+    """
+    Stop playback completely.
+    
+    Returns:
+        JSON confirmation
+    """
+    success = music_player.stop()
+    
+    if success:
+        state_manager.set_state(STATE_IDLE)
+        return jsonify({
+            'success': True,
+            'state': STATE_IDLE,
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Failed to stop music',
+        }), 500
+
+
+@app.route('/api/music/status', methods=['GET'])
+def music_status():
+    """
+    Get current playback status.
+    
+    Returns:
+        JSON with current track info and playback state
+    """
+    status = music_player.get_status()
+    
+    return jsonify({
+        'success': True,
+        'status': status,
+    })
+
+
+@app.route('/api/music/queue/add', methods=['POST'])
+def music_queue_add():
+    """
+    Add a track to the queue.
+    
+    Request body:
+        { "query": "song name or artist" }
+    
+    Returns:
+        JSON confirmation
+    """
+    data = request.get_json() or {}
+    query = data.get('query', '').strip()
+    
+    if not query:
+        return jsonify({
+            'success': False,
+            'error': 'Query is required',
+        }), 400
+    
+    success = music_player.add_to_queue(query)
+    
+    return jsonify({
+        'success': success,
+        'status': music_player.get_status(),
+    })
+
+
+# ============================================================================
+# Legacy Music API Routes (Chromium-based - kept for compatibility)
 # ============================================================================
 
 @app.route('/music/play', methods=['POST'])
 def play_music():
     """
-    Start playing music.
+    Start playing music (legacy endpoint - redirects to new player).
     
     Request body:
         { "artist": "Artist name" } (optional)
@@ -228,7 +402,11 @@ def play_music():
     data = request.get_json() or {}
     artist = data.get('artist', None)
     
-    success = music_controller.play_music(artist)
+    # Use new player instead
+    if artist:
+        success = music_player.search_and_play(artist)
+    else:
+        success = music_player.search_and_play("popular music")
     
     if success:
         state_manager.set_state(STATE_MUSIC)
@@ -247,12 +425,12 @@ def play_music():
 @app.route('/music/stop', methods=['POST'])
 def stop_music():
     """
-    Stop playing music.
+    Stop playing music (legacy endpoint).
     
     Returns:
         JSON confirmation
     """
-    success = music_controller.stop_music()
+    success = music_player.stop()
     
     if success:
         state_manager.set_state(STATE_IDLE)
@@ -570,10 +748,18 @@ if __name__ == '__main__':
     start_scheduled_message_manager(on_message_callback=on_scheduled_message)
     print("Scheduled message manager started (interval: 30 seconds)")
     
+    # Register cleanup handler for music player
+    import atexit
+    atexit.register(music_player.cleanup)
+    
     # Run the Flask server
-    app.run(
-        host='0.0.0.0',
-        port=5000,
-        debug=False,
-        threaded=True,
-    )
+    try:
+        app.run(
+            host='0.0.0.0',
+            port=5000,
+            debug=False,
+            threaded=True,
+        )
+    finally:
+        # Cleanup on exit
+        music_player.cleanup()
