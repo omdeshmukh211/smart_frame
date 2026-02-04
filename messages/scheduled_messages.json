@@ -3,7 +3,7 @@
     "id": "example-001",
     "text": "This is an example scheduled message. Replace or remove this entry.",
     "from": "System",
-    "schedule_at": "2099-12-31 23:59",
+    "schedule_at": "2026-02-04 19:15",
     "timezone": "Asia/Kolkata"
   }
 ]
