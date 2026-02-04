@@ -4,6 +4,7 @@ Music player interface with playback controls.
 """
 
 import logging
+import subprocess
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QLineEdit, QSlider, QSpacerItem, QSizePolicy)
@@ -26,6 +27,7 @@ class MusicView(QWidget):
         self.app_state = app_state
         self.music_service = music_service
         self.navigate = navigate_callback
+        self.keyboard_process = None  # Track keyboard process
         self._init_ui()
         
         # Listen for music state updates
@@ -37,28 +39,6 @@ class MusicView(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
-        
-        # Top bar with close button
-        top_bar = QHBoxLayout()
-        top_bar.addStretch()
-        
-        self.close_btn = QPushButton("✕")
-        self.close_btn.setFixedSize(50, 50)
-        self.close_btn.setFont(QFont("Arial", 20, QFont.Bold))
-        self.close_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_HOME))
-        self.close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #F44336;
-                color: white;
-                border-radius: 25px;
-                border: none;
-            }
-            QPushButton:pressed {
-                background-color: #D32F2F;
-            }
-        """)
-        top_bar.addWidget(self.close_btn)
-        layout.addLayout(top_bar)
         
         # Title
         title = QLabel("YouTube Music Player")
@@ -76,6 +56,11 @@ class MusicView(QWidget):
         self.search_input.setMinimumHeight(50)
         self.search_input.setFont(QFont("Arial", 16))
         self.search_input.returnPressed.connect(self._search_and_play)
+        
+        # ADDED: Show keyboard when search box is clicked
+        self.search_input.mousePressEvent = self._on_search_clicked
+        self.search_input.focusInEvent = self._on_search_focus_in
+        
         search_layout.addWidget(self.search_input)
         
         self.search_btn = QPushButton("🔍 Search")
@@ -173,6 +158,50 @@ class MusicView(QWidget):
         nav_layout.addWidget(self.home_btn)
         layout.addLayout(nav_layout)
     
+    # ADDED: Keyboard launch methods
+    def _on_search_clicked(self, event):
+        """Called when search input is clicked."""
+        # Call original mouse press event
+        QLineEdit.mousePressEvent(self.search_input, event)
+        # Show keyboard
+        self._show_keyboard()
+    
+    def _on_search_focus_in(self, event):
+        """Called when search input receives focus."""
+        # Call original focus in event
+        QLineEdit.focusInEvent(self.search_input, event)
+        # Show keyboard
+        self._show_keyboard()
+    
+    def _show_keyboard(self):
+        """Launch matchbox-keyboard if not already running."""
+        try:
+            # Check if keyboard is already running
+            result = subprocess.run(
+                ['pgrep', '-x', 'matchbox-keyb'],
+                capture_output=True
+            )
+            
+            if result.returncode != 0:  # Not running
+                logger.info("Launching matchbox-keyboard")
+                self.keyboard_process = subprocess.Popen(
+                    ['matchbox-keyboard'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            else:
+                logger.debug("Keyboard already running")
+        except Exception as e:
+            logger.error(f"Failed to launch keyboard: {e}")
+    
+    def _hide_keyboard(self):
+        """Hide the on-screen keyboard."""
+        try:
+            subprocess.run(['pkill', 'matchbox-keyb'], timeout=2)
+            logger.info("Keyboard hidden")
+        except Exception as e:
+            logger.error(f"Failed to hide keyboard: {e}")
+    
     def _create_control_button(self, symbol: str, tooltip: str) -> QPushButton:
         """Create a playback control button."""
         btn = QPushButton(symbol)
@@ -226,6 +255,9 @@ class MusicView(QWidget):
         logger.info(f"Searching for: {query}")
         self.search_btn.setEnabled(False)
         self.search_btn.setText("Searching...")
+        
+        # ADDED: Hide keyboard when searching
+        self._hide_keyboard()
         
         # Search and play in background
         self.music_service.search_and_play(query)
@@ -293,4 +325,6 @@ class MusicView(QWidget):
     def on_deactivate(self):
         """Called when view becomes inactive."""
         logger.debug("Music view deactivated")
+        # ADDED: Hide keyboard when leaving view
+        self._hide_keyboard()
         # Music continues playing in background
