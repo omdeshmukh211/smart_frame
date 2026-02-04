@@ -6,6 +6,7 @@ Displays animated robot face with blinking, yawning, and sleep modes.
 import logging
 import random
 from datetime import datetime
+import time
 from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect, QPoint
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QFont, QPainterPath
@@ -38,6 +39,7 @@ class IdleView(QWidget):
         self.float_offset = 0
         self.zzz_opacity = 0
         self.zzz_index = 0
+        self._float_start = time.time()
         
         self._init_ui()
         self._init_timers()
@@ -157,7 +159,9 @@ class IdleView(QWidget):
     def _update_float(self):
         """Update floating animation."""
         import math
-        self.float_offset = math.sin(QTimer().singleShot.__self__.elapsed() / 1000.0) * 6
+        # compute elapsed seconds since float animation start
+        elapsed = time.time() - self._float_start
+        self.float_offset = math.sin(elapsed) * 6
         self.update()
     
     def _update_zzz(self):
