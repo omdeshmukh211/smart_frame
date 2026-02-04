@@ -70,21 +70,21 @@ class AppState:
             return self._current_view
     
     def set_current_view(self, view: str):
-        """Svalid_views = [
-                self.VIEW_IDLE, self.VIEW_HOME, self.VIEW_PHOTOS, 
+        """Set current view."""
+        with self._lock:
+            valid_views = [
+                self.VIEW_IDLE, self.VIEW_HOME, self.VIEW_PHOTOS,
                 self.VIEW_MUSIC, self.VIEW_SETTINGS, self.VIEW_MESSAGES,
-                self.VIEW_GAMES
+                self.VIEW_GAMES,
             ]
             if view in valid_views:
                 old_view = self._current_view
                 self._current_view = view
-                
+
                 # Update last interaction time if not idle
                 if view != self.VIEW_IDLE:
                     self._last_interaction = datetime.now()
-                elf.VIEW_PHOTOS, self.VIEW_MUSIC, self.VIEW_SETTINGS]:
-                old_view = self._current_view
-                self._current_view = view
+
                 if old_view != view:
                     self._trigger_callback('view_changed', view)
     
