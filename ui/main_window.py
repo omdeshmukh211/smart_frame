@@ -4,15 +4,18 @@ Root window containing navigation and view stack.
 """
 
 import logging
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
 from PyQt5.QtGui import QKeySequence
 
 from models.app_state import AppState
+from ui.views.idle_view import IdleView
 from ui.views.home_view import HomeView
 from ui.views.photo_view import PhotoView
 from ui.views.music_view import MusicView
 from ui.views.settings_view import SettingsView
+from ui.views.messages_view import MessagesView
+from ui.views.games_view import GamesView
 from services.photo_service import PhotoService
 from services.music_service import MusicService
 
@@ -36,6 +39,14 @@ class MainWindow(QMainWindow):
         
         # Setup UI
         self._init_ui()
+        
+        # Install event filter for tracking interactions
+        self.installEventFilter(self)
+        
+        # Idle timer - check every 5 seconds
+        self.idle_timer = QTimer()
+        self.idle_timer.timeout.connect(self._check_idle)
+        self.idle_timer.start(5000)
         
         # Start services
         self.photo_service.start()
@@ -64,24 +75,35 @@ class MainWindow(QMainWindow):
         
         # Main layout
         layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        
-        # Create stacked widget for views
-        self.stack = QStackedWidget()
-        layout.addWidget(self.stack)
-        
-        # Create views
-        self.home_view = HomeView(self.app_state, self._navigate)
+        layouidle_view = IdleView(self.app_state, lambda: self._navigate(AppState.VIEW_HOME))
+        self.home_view = HomeView(
+            self.app_state, 
+            self._navigate,
+            show_messages_callback=lambda: self._navigate(AppState.VIEW_MESSAGES),
+            show_games_callback=lambda: self._navigate(AppState.VIEW_GAMES)
+        )
         self.photo_view = PhotoView(self.app_state, self.photo_service, self._navigate)
         self.music_view = MusicView(self.app_state, self.music_service, self._navigate)
         self.settings_view = SettingsView(self.app_state, self._navigate)
+        self.messages_view = MessagesView(self.app_state, self._navigate)
+        self.games_view = GamesView(self.app_state, self._navigate)
         
         # Add views to stack
         self.views = {
+            AppState.VIEW_IDLE: self.idle_view,
             AppState.VIEW_HOME: self.home_view,
             AppState.VIEW_PHOTOS: self.photo_view,
             AppState.VIEW_MUSIC: self.music_view,
+            AppState.VIEW_SETTINGS: self.settings_view,
+            AppState.VIEW_MESSAGES: self.messages_view,
+            AppState.VIEW_GAMES: self.games_view,
+        }
+        
+        for view_name, view_widget in self.views.items():
+            self.stack.addWidget(view_widget)
+        
+        # Show idle view initially
+        self._navigate(AppState.VIEW_IDLsic_view,
             AppState.VIEW_SETTINGS: self.settings_view,
         }
         
@@ -114,16 +136,39 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
             self.setCursor(Qt.BlankCursor)
+    self.app_state.update_interaction()
+            
+            # Activate/deactivate views as needed
+            for name, view in self.views.items():
+                if name == view_name:
+                    if hasattr(view, 'on_activate'):
+                        view.on_activate()
+                    self.stack.setCurrentWidget(view)
+                else:
+                    if hasattr(view, 'on_deactivate'):
+                        view.on_deactivate()
     
-    def _navigate(self, view_name: str):
-        """
-        Navigate to a view.
+    def _check_idle(self):
+        """Check if we should return to idle view."""
+        if self.app_state.should_go_idle():
+            logger.info("Idle timeout - returning to idle view")
+            self._navigate(AppState.VIEW_IDLE)
+    
+    def eventFilter(self, obj, event):
+        """Filter events to track user interaction."""
+        # Track mouse and keyboard events as interaction
+        if event.type() in [
+            QEvent.MouseButtonPress,
+            QEvent.MouseButtonRelease,
+            QEvent.MouseMove,
+            QEvent.KeyPress,
+            QEvent.KeyRelease,
+            QEvent.TouchBegin,
+            QEvent.TouchEnd
+        ]:
+            self.app_state.update_interaction()
         
-        Args:
-            view_name: Name of view to navigate to
-        """
-        if view_name in self.views:
-            logger.info(f"Navigating to: {view_name}")
+        return super().eventFilter(obj, eventiew_name}")
             self.app_state.set_current_view(view_name)
             
             # Activate/deactivate views as needed
