@@ -25,7 +25,7 @@ class CircularButton(QPushButton):
         super().__init__(parent)
         self.label_text = label_text
         self.icon_svg = icon_svg
-        self.setFixedSize(70, 90)  # Smaller size
+        self.setFixedSize(120, 110)  # Size for 5 buttons in ~768px width
         self.setCursor(Qt.PointingHandCursor)
         
         self.setStyleSheet("""
@@ -43,8 +43,8 @@ class CircularButton(QPushButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        # Draw circle - smaller size
-        circle_size = 50
+        # Draw circle
+        circle_size = 60
         circle_x = (self.width() - circle_size) // 2
         circle_y = 5
         
@@ -55,7 +55,7 @@ class CircularButton(QPushButton):
         
         # Draw simple icon (text-based for simplicity)
         painter.setPen(QColor(255, 255, 255))
-        font = QFont("Arial", 20)  # Smaller font
+        font = QFont("Arial", 24)
         painter.setFont(font)
         painter.drawText(
             circle_x, circle_y, circle_size, circle_size,
@@ -63,10 +63,10 @@ class CircularButton(QPushButton):
         )
         
         # Draw label below
-        font = QFont("Arial", 10, QFont.Bold)  # Smaller label font
+        font = QFont("Arial", 11, QFont.Bold)
         painter.setFont(font)
         painter.drawText(
-            0, circle_y + circle_size + 5,
+            0, circle_y + circle_size + 8,
             self.width(), 25,
             Qt.AlignCenter, self.label_text
         )
@@ -119,53 +119,49 @@ class HomeView(QWidget):
     
     def _init_ui(self):
         """Initialize UI components."""
-        # Main layout - vertical with buttons at bottom
-        main_layout = QVBoxLayout(self)
+        # Screen is 1024x600
+        # Layout: 25% left (256px) | 75% right (768px)
+        # Right side: 75% top (photo) | 25% bottom (buttons) = 450px | 150px
+        
+        # Main horizontal layout
+        main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Content area (horizontal split - clock on left, photo on right)
-        content_widget = QWidget()
-        content_layout = QHBoxLayout(content_widget)
-        content_layout.setContentsMargins(20, 20, 20, 10)
-        content_layout.setSpacing(10)
-        
-        # Left side - Clock and sun/moon
+        # ===== LEFT SIDE (25%) - Clock, Date, Sun/Moon =====
         left_widget = QWidget()
+        left_widget.setFixedWidth(256)  # 25% of 1024
         left_layout = QVBoxLayout(left_widget)
-        left_layout.setContentsMargins(20, 20, 10, 10)
-        left_layout.setSpacing(10)
+        left_layout.setContentsMargins(15, 15, 10, 15)
+        left_layout.setSpacing(5)
         
-        # Sun/Moon placeholder (drawn in paintEvent)
-        left_layout.addSpacing(120)
+        # Sun/Moon area at top (drawn in paintEvent)
+        left_layout.addSpacing(100)
         
         # Clock display
         self.time_label = QLabel()
-        time_font = QFont("Arial", 72, QFont.Bold)
+        time_font = QFont("Arial", 48, QFont.Bold)
         self.time_label.setFont(time_font)
         self.time_label.setAlignment(Qt.AlignLeft)
         left_layout.addWidget(self.time_label)
         
+        # Date display
         self.date_label = QLabel()
-        date_font = QFont("Arial", 18)
+        date_font = QFont("Arial", 14)
         self.date_label.setFont(date_font)
         self.date_label.setAlignment(Qt.AlignLeft)
         left_layout.addWidget(self.date_label)
         
         left_layout.addStretch()
         
-        # Right side - Photo frame
+        # ===== RIGHT SIDE (75%) - Photo Frame + Buttons =====
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
-        right_layout.setContentsMargins(10, 20, 20, 10)
+        right_layout.setContentsMargins(10, 15, 15, 10)
         right_layout.setSpacing(10)
         
-        right_layout.addStretch()
-        
-        # Photo frame placeholder
+        # ----- Top 75% of right side: Photo Frame -----
         self.photo_frame = QFrame()
-        self.photo_frame.setMinimumSize(200, 150)
-        self.photo_frame.setMaximumSize(300, 200)
         self.photo_frame.setStyleSheet("""
             QFrame {
                 background: rgba(255, 255, 255, 0.1);
@@ -179,36 +175,27 @@ class HomeView(QWidget):
         
         self.photo_preview = QLabel("📷")
         self.photo_preview.setAlignment(Qt.AlignCenter)
-        photo_font = QFont("Arial", 32)
+        photo_font = QFont("Arial", 48)
         self.photo_preview.setFont(photo_font)
         photo_layout.addWidget(self.photo_preview)
         
         photo_text = QLabel("Photo Frame")
         photo_text.setAlignment(Qt.AlignCenter)
-        photo_text.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 14px;")
+        photo_text.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 16px;")
         photo_layout.addWidget(photo_text)
         
         # Make photo frame clickable
         self.photo_frame.mousePressEvent = lambda e: self.navigate(AppState.VIEW_PHOTOS)
         self.photo_frame.setCursor(Qt.PointingHandCursor)
         
-        right_layout.addWidget(self.photo_frame)
-        right_layout.addStretch()
+        right_layout.addWidget(self.photo_frame, stretch=3)  # 75% of right side
         
-        # Add left and right to content area
-        content_layout.addWidget(left_widget, stretch=1)
-        content_layout.addWidget(right_widget, stretch=1)
-        
-        main_layout.addWidget(content_widget, stretch=1)
-        
-        # Bottom bar with circular action buttons
-        bottom_bar = QWidget()
-        bottom_bar.setFixedHeight(100)
-        bottom_bar.setStyleSheet("background: transparent;")
-        
-        buttons_layout = QHBoxLayout(bottom_bar)
-        buttons_layout.setContentsMargins(20, 5, 20, 10)
-        buttons_layout.setSpacing(10)
+        # ----- Bottom 25% of right side: Buttons -----
+        buttons_widget = QWidget()
+        buttons_widget.setStyleSheet("background: transparent;")
+        buttons_layout = QHBoxLayout(buttons_widget)
+        buttons_layout.setContentsMargins(10, 5, 10, 5)
+        buttons_layout.setSpacing(15)
         buttons_layout.setAlignment(Qt.AlignCenter)
         
         # Create circular buttons
@@ -235,7 +222,11 @@ class HomeView(QWidget):
         buttons_layout.addWidget(self.games_btn)
         buttons_layout.addWidget(self.messages_btn)
         
-        main_layout.addWidget(bottom_bar)
+        right_layout.addWidget(buttons_widget, stretch=1)  # 25% of right side
+        
+        # Add left and right to main layout
+        main_layout.addWidget(left_widget)
+        main_layout.addWidget(right_widget, stretch=1)
         
         # Initial clock update
         self._update_clock()
@@ -282,24 +273,25 @@ class HomeView(QWidget):
     
     def _draw_sun(self, painter):
         """Draw animated sun."""
-        center_x, center_y = 100, 100
-        radius = 55
+        # Position sun in top-left of the 25% column (256px wide)
+        center_x, center_y = 70, 60
+        radius = 35
         
         # Sun glow
-        glow = QRadialGradient(center_x, center_y, 95)
+        glow = QRadialGradient(center_x, center_y, 60)
         glow.setColorAt(0, QColor(255, 215, 0, 255))
         glow.setColorAt(0.6, QColor(255, 165, 0, 150))
         glow.setColorAt(1, QColor(255, 140, 0, 0))
         painter.setBrush(QBrush(glow))
         painter.setPen(Qt.NoPen)
-        painter.drawEllipse(QPointF(center_x, center_y), 95, 95)
+        painter.drawEllipse(QPointF(center_x, center_y), 60, 60)
         
         # Main sun circle
         painter.setBrush(QBrush(QColor("#FFD700")))
         painter.drawEllipse(QPointF(center_x, center_y), radius, radius)
         
         # Sun rays (rotating)
-        painter.setPen(QPen(QColor("#FFD700"), 5, Qt.SolidLine, Qt.RoundCap))
+        painter.setPen(QPen(QColor("#FFD700"), 3, Qt.SolidLine, Qt.RoundCap))
         for i in range(8):
             angle = (i * 45 + self.sun_rotation) * math.pi / 180
             x1 = center_x + radius * 1.3 * math.cos(angle)
@@ -310,30 +302,31 @@ class HomeView(QWidget):
     
     def _draw_moon(self, painter):
         """Draw moon."""
-        center_x, center_y = 100, 100
+        # Position moon in top-left of the 25% column (256px wide)
+        center_x, center_y = 70, 60
         
         # Moon glow
-        glow = QRadialGradient(center_x, center_y, 90)
+        glow = QRadialGradient(center_x, center_y, 55)
         glow.setColorAt(0, QColor(232, 232, 208, 100))
         glow.setColorAt(1, QColor(232, 232, 208, 0))
         painter.setBrush(QBrush(glow))
         painter.setPen(Qt.NoPen)
-        painter.drawEllipse(QPointF(center_x, center_y), 90, 90)
+        painter.drawEllipse(QPointF(center_x, center_y), 55, 55)
         
         # Main moon (crescent shape)
         painter.setBrush(QBrush(QColor("#F5F5DC")))
-        painter.drawEllipse(QPointF(center_x, center_y), 50, 50)
+        painter.drawEllipse(QPointF(center_x, center_y), 32, 32)
         
         # Dark overlay for crescent
         painter.setBrush(QBrush(self.palette().color(QPalette.Window)))
-        painter.drawEllipse(QPointF(center_x + 20, center_y), 45, 45)
+        painter.drawEllipse(QPointF(center_x + 14, center_y), 28, 28)
         
         # Moon craters
         painter.setBrush(QBrush(QColor("#E8E8D0")))
         painter.setOpacity(0.5)
-        painter.drawEllipse(QPointF(center_x - 15, center_y - 5), 8, 8)
-        painter.drawEllipse(QPointF(center_x + 5, center_y + 15), 12, 12)
-        painter.drawEllipse(QPointF(center_x - 20, center_y + 20), 6, 6)
+        painter.drawEllipse(QPointF(center_x - 10, center_y - 3), 5, 5)
+        painter.drawEllipse(QPointF(center_x + 3, center_y + 10), 8, 8)
+        painter.drawEllipse(QPointF(center_x - 13, center_y + 13), 4, 4)
         painter.setOpacity(1.0)
     
     def _draw_stars(self, painter):
