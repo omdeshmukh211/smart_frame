@@ -120,19 +120,19 @@ class HomeView(QWidget):
     def _init_ui(self):
         """Initialize UI components."""
         # Screen is 1024x600
-        # Layout: 25% left (256px) | 75% right (768px)
-        # Right side: 75% top (photo) | 25% bottom (buttons) = 450px | 150px
+        # Layout: 40% left (~410px) | 60% right (~614px)
+        # Right side: 75% top (photo) = 450px | 25% bottom (buttons) = 150px
         
         # Main horizontal layout
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # ===== LEFT SIDE (25%) - Clock, Date, Sun/Moon =====
+        # ===== LEFT SIDE (40%) - Clock, Date, Sun/Moon =====
         left_widget = QWidget()
-        left_widget.setFixedWidth(256)  # 25% of 1024
+        left_widget.setFixedWidth(410)  # 40% of 1024
         left_layout = QVBoxLayout(left_widget)
-        left_layout.setContentsMargins(15, 15, 10, 15)
+        left_layout.setContentsMargins(20, 20, 15, 20)
         left_layout.setSpacing(5)
         
         # Sun/Moon area at top (drawn in paintEvent)
@@ -140,28 +140,29 @@ class HomeView(QWidget):
         
         # Clock display
         self.time_label = QLabel()
-        time_font = QFont("Arial", 48, QFont.Bold)
+        time_font = QFont("Arial", 64, QFont.Bold)
         self.time_label.setFont(time_font)
         self.time_label.setAlignment(Qt.AlignLeft)
         left_layout.addWidget(self.time_label)
         
         # Date display
         self.date_label = QLabel()
-        date_font = QFont("Arial", 14)
+        date_font = QFont("Arial", 18)
         self.date_label.setFont(date_font)
         self.date_label.setAlignment(Qt.AlignLeft)
         left_layout.addWidget(self.date_label)
         
         left_layout.addStretch()
         
-        # ===== RIGHT SIDE (75%) - Photo Frame + Buttons =====
+        # ===== RIGHT SIDE (60%) - Photo Frame + Buttons =====
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
-        right_layout.setContentsMargins(10, 15, 15, 10)
+        right_layout.setContentsMargins(15, 15, 20, 10)
         right_layout.setSpacing(10)
         
-        # ----- Top 75% of right side: Photo Frame -----
+        # ----- Top 75% of right side: Photo Frame (fixed 450px) -----
         self.photo_frame = QFrame()
+        self.photo_frame.setFixedHeight(450)  # 75% of 600px
         self.photo_frame.setStyleSheet("""
             QFrame {
                 background: rgba(255, 255, 255, 0.1);
@@ -188,14 +189,15 @@ class HomeView(QWidget):
         self.photo_frame.mousePressEvent = lambda e: self.navigate(AppState.VIEW_PHOTOS)
         self.photo_frame.setCursor(Qt.PointingHandCursor)
         
-        right_layout.addWidget(self.photo_frame, stretch=3)  # 75% of right side
+        right_layout.addWidget(self.photo_frame)
         
-        # ----- Bottom 25% of right side: Buttons -----
+        # ----- Bottom 25% of right side: Buttons (fixed 140px) -----
         buttons_widget = QWidget()
+        buttons_widget.setFixedHeight(140)  # ~25% of 600px minus margins
         buttons_widget.setStyleSheet("background: transparent;")
         buttons_layout = QHBoxLayout(buttons_widget)
-        buttons_layout.setContentsMargins(10, 5, 10, 5)
-        buttons_layout.setSpacing(15)
+        buttons_layout.setContentsMargins(5, 5, 5, 5)
+        buttons_layout.setSpacing(10)
         buttons_layout.setAlignment(Qt.AlignCenter)
         
         # Create circular buttons
@@ -222,7 +224,7 @@ class HomeView(QWidget):
         buttons_layout.addWidget(self.games_btn)
         buttons_layout.addWidget(self.messages_btn)
         
-        right_layout.addWidget(buttons_widget, stretch=1)  # 25% of right side
+        right_layout.addWidget(buttons_widget)
         
         # Add left and right to main layout
         main_layout.addWidget(left_widget)
@@ -273,25 +275,25 @@ class HomeView(QWidget):
     
     def _draw_sun(self, painter):
         """Draw animated sun."""
-        # Position sun in top-left of the 25% column (256px wide)
-        center_x, center_y = 70, 60
-        radius = 35
+        # Position sun in top-left of the 40% column (410px wide)
+        center_x, center_y = 90, 70
+        radius = 40
         
         # Sun glow
-        glow = QRadialGradient(center_x, center_y, 60)
+        glow = QRadialGradient(center_x, center_y, 70)
         glow.setColorAt(0, QColor(255, 215, 0, 255))
         glow.setColorAt(0.6, QColor(255, 165, 0, 150))
         glow.setColorAt(1, QColor(255, 140, 0, 0))
         painter.setBrush(QBrush(glow))
         painter.setPen(Qt.NoPen)
-        painter.drawEllipse(QPointF(center_x, center_y), 60, 60)
+        painter.drawEllipse(QPointF(center_x, center_y), 70, 70)
         
         # Main sun circle
         painter.setBrush(QBrush(QColor("#FFD700")))
         painter.drawEllipse(QPointF(center_x, center_y), radius, radius)
         
         # Sun rays (rotating)
-        painter.setPen(QPen(QColor("#FFD700"), 3, Qt.SolidLine, Qt.RoundCap))
+        painter.setPen(QPen(QColor("#FFD700"), 4, Qt.SolidLine, Qt.RoundCap))
         for i in range(8):
             angle = (i * 45 + self.sun_rotation) * math.pi / 180
             x1 = center_x + radius * 1.3 * math.cos(angle)
@@ -302,31 +304,31 @@ class HomeView(QWidget):
     
     def _draw_moon(self, painter):
         """Draw moon."""
-        # Position moon in top-left of the 25% column (256px wide)
-        center_x, center_y = 70, 60
+        # Position moon in top-left of the 40% column (410px wide)
+        center_x, center_y = 90, 70
         
         # Moon glow
-        glow = QRadialGradient(center_x, center_y, 55)
+        glow = QRadialGradient(center_x, center_y, 65)
         glow.setColorAt(0, QColor(232, 232, 208, 100))
         glow.setColorAt(1, QColor(232, 232, 208, 0))
         painter.setBrush(QBrush(glow))
         painter.setPen(Qt.NoPen)
-        painter.drawEllipse(QPointF(center_x, center_y), 55, 55)
+        painter.drawEllipse(QPointF(center_x, center_y), 65, 65)
         
         # Main moon (crescent shape)
         painter.setBrush(QBrush(QColor("#F5F5DC")))
-        painter.drawEllipse(QPointF(center_x, center_y), 32, 32)
+        painter.drawEllipse(QPointF(center_x, center_y), 40, 40)
         
         # Dark overlay for crescent
         painter.setBrush(QBrush(self.palette().color(QPalette.Window)))
-        painter.drawEllipse(QPointF(center_x + 14, center_y), 28, 28)
+        painter.drawEllipse(QPointF(center_x + 16, center_y), 35, 35)
         
         # Moon craters
         painter.setBrush(QBrush(QColor("#E8E8D0")))
         painter.setOpacity(0.5)
-        painter.drawEllipse(QPointF(center_x - 10, center_y - 3), 5, 5)
-        painter.drawEllipse(QPointF(center_x + 3, center_y + 10), 8, 8)
-        painter.drawEllipse(QPointF(center_x - 13, center_y + 13), 4, 4)
+        painter.drawEllipse(QPointF(center_x - 12, center_y - 5), 6, 6)
+        painter.drawEllipse(QPointF(center_x + 4, center_y + 12), 10, 10)
+        painter.drawEllipse(QPointF(center_x - 16, center_y + 16), 5, 5)
         painter.setOpacity(1.0)
     
     def _draw_stars(self, painter):
