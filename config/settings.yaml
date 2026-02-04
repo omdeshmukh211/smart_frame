@@ -1,6 +1,19 @@
 # Smart Frame Configuration Settings
+# Native PyQt5 Version - No Web Components
 
+# Photo Slideshow Settings
+slideshow_interval: 5  # seconds between photos
+slideshow_transition: fade  # fade or instant
+photos_dir: ~/Pictures  # Path to photos directory (will expand ~)
+
+# Music Player Settings
+music_autoplay: false  # Auto-play music on startup
+volume: 70  # Default volume (0-100)
+
+# Display Settings
+display_width: 1024
+display_height: 600
+
+# Legacy settings (kept for compatibility)
 clock_timeout: 120
-message_timeout: 300
-default_volume: 70
-default_brightness: 100
+brightness: 100
