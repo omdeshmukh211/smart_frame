@@ -4,7 +4,7 @@
 # Photo Slideshow Settings
 slideshow_interval: 5  # seconds between photos
 slideshow_transition: fade  # fade or instant
-photos_dir: ~/Pictures  # Path to photos directory (will expand ~)
+photos_dir: photos  # Path to photos directory (relative to app directory or absolute)
 
 # Music Player Settings
 music_autoplay: false  # Auto-play music on startup

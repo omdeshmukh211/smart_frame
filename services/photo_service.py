@@ -39,8 +39,17 @@ class PhotoService(QThread):
         self._running = False
         
         # Get photos directory from settings
-        photos_dir = app_state.get_setting('photos_dir', str(Path.home() / 'Pictures'))
-        self.photos_dir = Path(photos_dir)
+        photos_dir = app_state.get_setting('photos_dir', 'photos')
+        photos_path = Path(photos_dir)
+        
+        # Handle relative paths - resolve relative to app directory
+        if not photos_path.is_absolute():
+            # Get the directory where the app is running from
+            app_dir = Path(__file__).parent.parent
+            photos_path = app_dir / photos_dir
+        
+        # Expand ~ for home directory
+        self.photos_dir = photos_path.expanduser().resolve()
         
         # Ensure directory exists
         self.photos_dir.mkdir(parents=True, exist_ok=True)

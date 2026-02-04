@@ -38,6 +38,28 @@ class MusicView(QWidget):
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
         
+        # Top bar with close button
+        top_bar = QHBoxLayout()
+        top_bar.addStretch()
+        
+        self.close_btn = QPushButton("✕")
+        self.close_btn.setFixedSize(50, 50)
+        self.close_btn.setFont(QFont("Arial", 20, QFont.Bold))
+        self.close_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_HOME))
+        self.close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #F44336;
+                color: white;
+                border-radius: 25px;
+                border: none;
+            }
+            QPushButton:pressed {
+                background-color: #D32F2F;
+            }
+        """)
+        top_bar.addWidget(self.close_btn)
+        layout.addLayout(top_bar)
+        
         # Title
         title = QLabel("YouTube Music Player")
         title.setFont(QFont("Arial", 28, QFont.Bold))
