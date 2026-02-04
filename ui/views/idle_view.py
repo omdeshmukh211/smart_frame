@@ -49,15 +49,10 @@ class IdleView(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # Set dark background
+        # Set pure black background
         self.setStyleSheet("""
             QWidget {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #0a0a12,
-                    stop:0.5 #12121f,
-                    stop:1 #0a0a12
-                );
+                background-color: #000000;
             }
         """)
         
@@ -190,38 +185,14 @@ class IdleView(QWidget):
             self.robot_state = self.STATE_NORMAL
             self.zzz_timer.stop()
         
-        # Center of screen
+        # Center of screen - no container box, just eyes and mouth on black
         center_x = self.width() // 2
         center_y = self.height() // 2 - 50 + int(self.float_offset)
         
-        # Draw robot face container
-        face_width = 240
-        face_height = 180
-        face_rect = QRect(
-            center_x - face_width // 2,
-            center_y - face_height // 2,
-            face_width,
-            face_height
-        )
-        
-        # Face background (screen-like)
-        painter.setPen(Qt.NoPen)
-        gradient = QColor(26, 42, 58)  # Dark blue-gray
-        painter.setBrush(QBrush(gradient))
-        painter.drawRoundedRect(face_rect, 35, 35)
-        
-        # Glow effect
-        glow_color = QColor(100, 180, 255, 25)
-        if self.robot_state == self.STATE_SLEEP:
-            glow_color = QColor(100, 180, 255, 10)
-        painter.setPen(QPen(glow_color, 3))
-        painter.setBrush(Qt.NoBrush)
-        painter.drawRoundedRect(face_rect.adjusted(-3, -3, 3, 3), 38, 38)
-        
-        # Draw eyes
+        # Draw eyes directly on black background
         self._draw_eyes(painter, center_x, center_y)
         
-        # Draw mouth
+        # Draw mouth directly on black background
         self._draw_mouth(painter, center_x, center_y)
         
         # Draw ZZZ if sleeping

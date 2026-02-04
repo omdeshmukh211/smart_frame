@@ -25,7 +25,7 @@ class CircularButton(QPushButton):
         super().__init__(parent)
         self.label_text = label_text
         self.icon_svg = icon_svg
-        self.setFixedSize(100, 120)
+        self.setFixedSize(70, 90)  # Smaller size
         self.setCursor(Qt.PointingHandCursor)
         
         self.setStyleSheet("""
@@ -33,7 +33,7 @@ class CircularButton(QPushButton):
                 background: transparent;
                 border: none;
                 color: white;
-                font-size: 14px;
+                font-size: 12px;
                 font-weight: bold;
             }
         """)
@@ -43,8 +43,8 @@ class CircularButton(QPushButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        # Draw circle
-        circle_size = 70
+        # Draw circle - smaller size
+        circle_size = 50
         circle_x = (self.width() - circle_size) // 2
         circle_y = 5
         
@@ -55,7 +55,7 @@ class CircularButton(QPushButton):
         
         # Draw simple icon (text-based for simplicity)
         painter.setPen(QColor(255, 255, 255))
-        font = QFont("Arial", 28)
+        font = QFont("Arial", 20)  # Smaller font
         painter.setFont(font)
         painter.drawText(
             circle_x, circle_y, circle_size, circle_size,
@@ -63,11 +63,11 @@ class CircularButton(QPushButton):
         )
         
         # Draw label below
-        font = QFont("Arial", 13, QFont.Bold)
+        font = QFont("Arial", 10, QFont.Bold)  # Smaller label font
         painter.setFont(font)
         painter.drawText(
-            0, circle_y + circle_size + 10,
-            self.width(), 30,
+            0, circle_y + circle_size + 5,
+            self.width(), 25,
             Qt.AlignCenter, self.label_text
         )
 
@@ -119,46 +119,53 @@ class HomeView(QWidget):
     
     def _init_ui(self):
         """Initialize UI components."""
-        # Main layout - horizontal split
-        main_layout = QHBoxLayout(self)
+        # Main layout - vertical with buttons at bottom
+        main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
+        # Content area (horizontal split - clock on left, photo on right)
+        content_widget = QWidget()
+        content_layout = QHBoxLayout(content_widget)
+        content_layout.setContentsMargins(20, 20, 20, 10)
+        content_layout.setSpacing(10)
+        
         # Left side - Clock and sun/moon
         left_widget = QWidget()
-        left_widget.setMinimumWidth(450)
         left_layout = QVBoxLayout(left_widget)
-        left_layout.setContentsMargins(40, 40, 20, 40)
-        left_layout.setSpacing(20)
+        left_layout.setContentsMargins(20, 20, 10, 10)
+        left_layout.setSpacing(10)
         
         # Sun/Moon placeholder (drawn in paintEvent)
-        left_layout.addSpacing(200)
+        left_layout.addSpacing(120)
         
         # Clock display
         self.time_label = QLabel()
-        time_font = QFont("Arial", 96, QFont.Bold)
+        time_font = QFont("Arial", 72, QFont.Bold)
         self.time_label.setFont(time_font)
         self.time_label.setAlignment(Qt.AlignLeft)
         left_layout.addWidget(self.time_label)
         
         self.date_label = QLabel()
-        date_font = QFont("Arial", 22)
+        date_font = QFont("Arial", 18)
         self.date_label.setFont(date_font)
         self.date_label.setAlignment(Qt.AlignLeft)
         left_layout.addWidget(self.date_label)
         
         left_layout.addStretch()
         
-        # Right side - Photo frame and buttons
+        # Right side - Photo frame
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
-        right_layout.setContentsMargins(20, 40, 40, 40)
-        right_layout.setSpacing(30)
+        right_layout.setContentsMargins(10, 20, 20, 10)
+        right_layout.setSpacing(10)
+        
+        right_layout.addStretch()
         
         # Photo frame placeholder
         self.photo_frame = QFrame()
-        self.photo_frame.setMinimumSize(450, 300)
-        self.photo_frame.setMaximumHeight(350)
+        self.photo_frame.setMinimumSize(200, 150)
+        self.photo_frame.setMaximumSize(300, 200)
         self.photo_frame.setStyleSheet("""
             QFrame {
                 background: rgba(255, 255, 255, 0.1);
@@ -172,13 +179,13 @@ class HomeView(QWidget):
         
         self.photo_preview = QLabel("📷")
         self.photo_preview.setAlignment(Qt.AlignCenter)
-        photo_font = QFont("Arial", 48)
+        photo_font = QFont("Arial", 32)
         self.photo_preview.setFont(photo_font)
         photo_layout.addWidget(self.photo_preview)
         
         photo_text = QLabel("Photo Frame")
         photo_text.setAlignment(Qt.AlignCenter)
-        photo_text.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 18px;")
+        photo_text.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 14px;")
         photo_layout.addWidget(photo_text)
         
         # Make photo frame clickable
@@ -188,9 +195,20 @@ class HomeView(QWidget):
         right_layout.addWidget(self.photo_frame)
         right_layout.addStretch()
         
-        # Circular action buttons
-        buttons_layout = QHBoxLayout()
-        buttons_layout.setSpacing(15)
+        # Add left and right to content area
+        content_layout.addWidget(left_widget, stretch=1)
+        content_layout.addWidget(right_widget, stretch=1)
+        
+        main_layout.addWidget(content_widget, stretch=1)
+        
+        # Bottom bar with circular action buttons
+        bottom_bar = QWidget()
+        bottom_bar.setFixedHeight(100)
+        bottom_bar.setStyleSheet("background: transparent;")
+        
+        buttons_layout = QHBoxLayout(bottom_bar)
+        buttons_layout.setContentsMargins(20, 5, 20, 10)
+        buttons_layout.setSpacing(10)
         buttons_layout.setAlignment(Qt.AlignCenter)
         
         # Create circular buttons
@@ -217,11 +235,7 @@ class HomeView(QWidget):
         buttons_layout.addWidget(self.games_btn)
         buttons_layout.addWidget(self.messages_btn)
         
-        right_layout.addLayout(buttons_layout)
-        
-        # Add left and right to main layout
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(right_widget)
+        main_layout.addWidget(bottom_bar)
         
         # Initial clock update
         self._update_clock()

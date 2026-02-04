@@ -44,6 +44,32 @@ class PhotoView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
+        # Top bar with close button
+        top_bar = QWidget()
+        top_bar.setFixedHeight(60)
+        top_bar.setStyleSheet("background-color: rgba(0, 0, 0, 180);")
+        top_bar_layout = QHBoxLayout(top_bar)
+        top_bar_layout.setContentsMargins(20, 10, 20, 10)
+        top_bar_layout.addStretch()
+        
+        self.close_btn = QPushButton("✕")
+        self.close_btn.setFixedSize(50, 50)
+        self.close_btn.setFont(QFont("Arial", 20, QFont.Bold))
+        self.close_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_HOME))
+        self.close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #F44336;
+                color: white;
+                border-radius: 25px;
+                border: none;
+            }
+            QPushButton:pressed {
+                background-color: #D32F2F;
+            }
+        """)
+        top_bar_layout.addWidget(self.close_btn)
+        layout.addWidget(top_bar)
+        
         # Photo display (main content)
         self.photo_label = QLabel()
         self.photo_label.setAlignment(Qt.AlignCenter)
