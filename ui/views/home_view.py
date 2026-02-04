@@ -1,116 +1,360 @@
 """
 Home View
-Main landing screen with navigation options.
+Main landing screen with clock, photo frame, and circular action buttons.
+Features day/night mode with sun/moon icons and animated backgrounds.
 """
 
 import logging
+import math
 from datetime import datetime
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QRectF, QPointF, QPropertyAnimation, QEasingCurve
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QGridLayout, QSpacerItem, QSizePolicy)
-from PyQt5.QtGui import QFont
+                             QPushButton, QGridLayout, QFrame)
+from PyQt5.QtGui import (QFont, QPainter, QPen, QBrush, QColor, QPainterPath,
+                        QLinearGradient, QRadialGradient, QPalette, QPixmap)
 
 from models.app_state import AppState
 
 logger = logging.getLogger(__name__)
 
 
+class CircularButton(QPushButton):
+    """Circular button with icon and label below."""
+    
+    def __init__(self, icon_svg, label_text, parent=None):
+        super().__init__(parent)
+        self.label_text = label_text
+        self.icon_svg = icon_svg
+        self.setFixedSize(100, 120)
+        self.setCursor(Qt.PointingHandCursor)
+        
+        self.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                border: none;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+            }
+        """)
+    
+    def paintEvent(self, event):
+        """Custom paint for circular button."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Draw circle
+        circle_size = 70
+        circle_x = (self.width() - circle_size) // 2
+        circle_y = 5
+        
+        # Circle background
+        painter.setPen(QPen(QColor(255, 255, 255), 2))
+        painter.setBrush(QBrush(QColor(255, 255, 255, 20)))
+        painter.drawEllipse(circle_x, circle_y, circle_size, circle_size)
+        
+        # Draw simple icon (text-based for simplicity)
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont("Arial", 28)
+        painter.setFont(font)
+        painter.drawText(
+            circle_x, circle_y, circle_size, circle_size,
+            Qt.AlignCenter, self.icon_svg
+        )
+        
+        # Draw label below
+        font = QFont("Arial", 13, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(
+            0, circle_y + circle_size + 10,
+            self.width(), 30,
+            Qt.AlignCenter, self.label_text
+        )
+
+
 class HomeView(QWidget):
     """
-    Home screen view.
-    Shows clock and navigation buttons.
+    Home screen view with day/night mode.
+    Shows clock, sun/moon, photo frame preview, and circular action buttons.
     """
     
-    def __init__(self, app_state: AppState, navigate_callback):
+    def __init__(self, app_state: AppState, navigate_callback, show_messages_callback=None, show_games_callback=None):
         super().__init__()
         self.app_state = app_state
         self.navigate = navigate_callback
+        self.show_messages_callback = show_messages_callback
+        self.show_games_callback = show_games_callback
+        
+        self.is_day_mode = True
+        self.sun_rotation = 0
+        self.stars = []
+        self._generate_stars()
+        
         self._init_ui()
         
         # Clock update timer
         self.clock_timer = QTimer()
         self.clock_timer.timeout.connect(self._update_clock)
-        self.clock_timer.start(1000)  # Update every second
+        self.clock_timer.start(1000)
+        
+        # Sun rotation animation
+        self.sun_timer = QTimer()
+        self.sun_timer.timeout.connect(self._rotate_sun)
+        self.sun_timer.start(50)
+        
+        # Check day/night mode
+        self._update_day_night_mode()
+    
+    def _generate_stars(self):
+        """Generate random star positions for night mode."""
+        import random
+        self.stars = []
+        for _ in range(25):
+            self.stars.append({
+                'x': random.random(),
+                'y': random.random(),
+                'size': random.choice([2, 3, 4]),
+                'twinkle_offset': random.random() * 360
+            })
     
     def _init_ui(self):
         """Initialize UI components."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(30)
+        # Main layout - horizontal split
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
-        # Add spacer at top
-        layout.addSpacing(50)
+        # Left side - Clock and sun/moon
+        left_widget = QWidget()
+        left_widget.setMinimumWidth(450)
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(40, 40, 20, 40)
+        left_layout.setSpacing(20)
+        
+        # Sun/Moon placeholder (drawn in paintEvent)
+        left_layout.addSpacing(200)
         
         # Clock display
-        clock_layout = QVBoxLayout()
-        clock_layout.setAlignment(Qt.AlignCenter)
-        
         self.time_label = QLabel()
-        time_font = QFont("Arial", 72, QFont.Bold)
+        time_font = QFont("Arial", 96, QFont.Bold)
         self.time_label.setFont(time_font)
-        self.time_label.setAlignment(Qt.AlignCenter)
-        clock_layout.addWidget(self.time_label)
+        self.time_label.setAlignment(Qt.AlignLeft)
+        left_layout.addWidget(self.time_label)
         
         self.date_label = QLabel()
-        date_font = QFont("Arial", 24)
+        date_font = QFont("Arial", 22)
         self.date_label.setFont(date_font)
-        self.date_label.setAlignment(Qt.AlignCenter)
-        clock_layout.addWidget(self.date_label)
+        self.date_label.setAlignment(Qt.AlignLeft)
+        left_layout.addWidget(self.date_label)
         
-        layout.addLayout(clock_layout)
+        left_layout.addStretch()
         
-        # Add spacer
-        layout.addSpacing(50)
+        # Right side - Photo frame and buttons
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(20, 40, 40, 40)
+        right_layout.setSpacing(30)
         
-        # Navigation buttons
-        button_layout = QGridLayout()
-        button_layout.setSpacing(20)
+        # Photo frame placeholder
+        self.photo_frame = QFrame()
+        self.photo_frame.setMinimumSize(450, 300)
+        self.photo_frame.setMaximumHeight(350)
+        self.photo_frame.setStyleSheet("""
+            QFrame {
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                border-radius: 15px;
+            }
+        """)
         
-        # Create large touch-friendly buttons
-        self.photo_btn = self._create_nav_button("📷\nPhotos", AppState.VIEW_PHOTOS)
-        self.music_btn = self._create_nav_button("🎵\nMusic", AppState.VIEW_MUSIC)
-        self.settings_btn = self._create_nav_button("⚙️\nSettings", AppState.VIEW_SETTINGS)
+        photo_layout = QVBoxLayout(self.photo_frame)
+        photo_layout.setAlignment(Qt.AlignCenter)
         
-        button_layout.addWidget(self.photo_btn, 0, 0)
-        button_layout.addWidget(self.music_btn, 0, 1)
-        button_layout.addWidget(self.settings_btn, 1, 0, 1, 2)
+        self.photo_preview = QLabel("📷")
+        self.photo_preview.setAlignment(Qt.AlignCenter)
+        photo_font = QFont("Arial", 48)
+        self.photo_preview.setFont(photo_font)
+        photo_layout.addWidget(self.photo_preview)
         
-        layout.addLayout(button_layout)
+        photo_text = QLabel("Photo Frame")
+        photo_text.setAlignment(Qt.AlignCenter)
+        photo_text.setStyleSheet("color: rgba(255, 255, 255, 0.6); font-size: 18px;")
+        photo_layout.addWidget(photo_text)
         
-        # Add bottom spacer
-        layout.addStretch()
+        # Make photo frame clickable
+        self.photo_frame.mousePressEvent = lambda e: self.navigate(AppState.VIEW_PHOTOS)
+        self.photo_frame.setCursor(Qt.PointingHandCursor)
+        
+        right_layout.addWidget(self.photo_frame)
+        right_layout.addStretch()
+        
+        # Circular action buttons
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(15)
+        buttons_layout.setAlignment(Qt.AlignCenter)
+        
+        # Create circular buttons
+        self.music_btn = CircularButton("🎵", "Music")
+        self.music_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_MUSIC))
+        
+        self.sleep_btn = CircularButton("😴", "Sleep")
+        self.sleep_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_IDLE))
+        
+        self.settings_btn = CircularButton("⚙️", "Settings")
+        self.settings_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_SETTINGS))
+        
+        self.games_btn = CircularButton("🎮", "Games")
+        if self.show_games_callback:
+            self.games_btn.clicked.connect(self.show_games_callback)
+        
+        self.messages_btn = CircularButton("💬", "Messages")
+        if self.show_messages_callback:
+            self.messages_btn.clicked.connect(self.show_messages_callback)
+        
+        buttons_layout.addWidget(self.music_btn)
+        buttons_layout.addWidget(self.sleep_btn)
+        buttons_layout.addWidget(self.settings_btn)
+        buttons_layout.addWidget(self.games_btn)
+        buttons_layout.addWidget(self.messages_btn)
+        
+        right_layout.addLayout(buttons_layout)
+        
+        # Add left and right to main layout
+        main_layout.addWidget(left_widget)
+        main_layout.addWidget(right_widget)
         
         # Initial clock update
         self._update_clock()
     
-    def _create_nav_button(self, text: str, view: str) -> QPushButton:
-        """Create a navigation button."""
-        btn = QPushButton(text)
-        btn.setMinimumHeight(120)
-        btn.setMinimumWidth(200)
+    def paintEvent(self, event):
+        """Custom paint for background and sun/moon."""
+        super().paintEvent(event)
         
-        # Large, readable font
-        font = QFont("Arial", 20, QFont.Bold)
-        btn.setFont(font)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
         
-        # Connect to navigation
-        btn.clicked.connect(lambda: self.navigate(view))
+        # Draw background gradient
+        if self.is_day_mode:
+            self._draw_day_background(painter)
+            self._draw_sun(painter)
+        else:
+            self._draw_night_background(painter)
+            self._draw_stars(painter)
+            self._draw_moon(painter)
+    
+    def _draw_day_background(self, painter):
+        """Draw day mode gradient."""
+        gradient = QLinearGradient(0, 0, self.width(), self.height())
+        gradient.setColorAt(0, QColor("#FFF9E6"))
+        gradient.setColorAt(0.3, QColor("#FFECB3"))
+        gradient.setColorAt(1, QColor("#FFE082"))
+        painter.fillRect(self.rect(), QBrush(gradient))
         
-        # Styling
-        btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border-radius: 10px;
-                padding: 20px;
-                border: none;
-            }
-            QPushButton:pressed {
-                background-color: #1976D2;
-            }
-        """)
+        # Update text colors for day mode
+        self.time_label.setStyleSheet("color: #000;")
+        self.date_label.setStyleSheet("color: #333;")
+    
+    def _draw_night_background(self, painter):
+        """Draw night mode gradient."""
+        gradient = QLinearGradient(0, 0, self.width(), self.height())
+        gradient.setColorAt(0, QColor("#0a0a1a"))
+        gradient.setColorAt(0.5, QColor("#1a1a3a"))
+        gradient.setColorAt(1, QColor("#0d0d2b"))
+        painter.fillRect(self.rect(), QBrush(gradient))
         
-        return btn
+        # Update text colors for night mode
+        self.time_label.setStyleSheet("color: #fff;")
+        self.date_label.setStyleSheet("color: #ccc;")
+    
+    def _draw_sun(self, painter):
+        """Draw animated sun."""
+        center_x, center_y = 100, 100
+        radius = 55
+        
+        # Sun glow
+        glow = QRadialGradient(center_x, center_y, 95)
+        glow.setColorAt(0, QColor(255, 215, 0, 255))
+        glow.setColorAt(0.6, QColor(255, 165, 0, 150))
+        glow.setColorAt(1, QColor(255, 140, 0, 0))
+        painter.setBrush(QBrush(glow))
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(QPointF(center_x, center_y), 95, 95)
+        
+        # Main sun circle
+        painter.setBrush(QBrush(QColor("#FFD700")))
+        painter.drawEllipse(QPointF(center_x, center_y), radius, radius)
+        
+        # Sun rays (rotating)
+        painter.setPen(QPen(QColor("#FFD700"), 5, Qt.SolidLine, Qt.RoundCap))
+        for i in range(8):
+            angle = (i * 45 + self.sun_rotation) * math.pi / 180
+            x1 = center_x + radius * 1.3 * math.cos(angle)
+            y1 = center_y + radius * 1.3 * math.sin(angle)
+            x2 = center_x + radius * 1.7 * math.cos(angle)
+            y2 = center_y + radius * 1.7 * math.sin(angle)
+            painter.drawLine(QPointF(x1, y1), QPointF(x2, y2))
+    
+    def _draw_moon(self, painter):
+        """Draw moon."""
+        center_x, center_y = 100, 100
+        
+        # Moon glow
+        glow = QRadialGradient(center_x, center_y, 90)
+        glow.setColorAt(0, QColor(232, 232, 208, 100))
+        glow.setColorAt(1, QColor(232, 232, 208, 0))
+        painter.setBrush(QBrush(glow))
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(QPointF(center_x, center_y), 90, 90)
+        
+        # Main moon (crescent shape)
+        painter.setBrush(QBrush(QColor("#F5F5DC")))
+        painter.drawEllipse(QPointF(center_x, center_y), 50, 50)
+        
+        # Dark overlay for crescent
+        painter.setBrush(QBrush(self.palette().color(QPalette.Window)))
+        painter.drawEllipse(QPointF(center_x + 20, center_y), 45, 45)
+        
+        # Moon craters
+        painter.setBrush(QBrush(QColor("#E8E8D0")))
+        painter.setOpacity(0.5)
+        painter.drawEllipse(QPointF(center_x - 15, center_y - 5), 8, 8)
+        painter.drawEllipse(QPointF(center_x + 5, center_y + 15), 12, 12)
+        painter.drawEllipse(QPointF(center_x - 20, center_y + 20), 6, 6)
+        painter.setOpacity(1.0)
+    
+    def _draw_stars(self, painter):
+        """Draw twinkling stars."""
+        import time
+        
+        painter.setPen(Qt.NoPen)
+        
+        for star in self.stars:
+            x = star['x'] * self.width()
+            y = star['y'] * self.height()
+            size = star['size']
+            
+            # Twinkling effect
+            twinkle = (math.sin(time.time() * 2 + star['twinkle_offset']) + 1) / 2
+            opacity = int(100 + 155 * twinkle)
+            
+            painter.setBrush(QBrush(QColor(255, 255, 255, opacity)))
+            painter.drawEllipse(QPointF(x, y), size, size)
+    
+    def _rotate_sun(self):
+        """Rotate sun rays."""
+        self.sun_rotation = (self.sun_rotation + 1) % 360
+        if self.is_day_mode:
+            self.update()
+    
+    def _update_day_night_mode(self):
+        """Check and update day/night mode."""
+        hour = datetime.now().hour
+        was_day = self.is_day_mode
+        self.is_day_mode = 6 <= hour < 18
+        
+        if was_day != self.is_day_mode:
+            logger.info(f"Switching to {'day' if self.is_day_mode else 'night'} mode")
+            self.update()
     
     def _update_clock(self):
         """Update clock display."""
@@ -121,16 +365,23 @@ class HomeView(QWidget):
         self.time_label.setText(time_str)
         
         # Update date
-        date_str = now.strftime("%A, %B %d, %Y")
+        date_str = now.strftime("%a %d %b %Y")
         self.date_label.setText(date_str)
+        
+        # Check day/night mode every minute
+        if now.second == 0:
+            self._update_day_night_mode()
     
     def on_activate(self):
         """Called when view becomes active."""
         logger.debug("Home view activated")
         self.clock_timer.start(1000)
+        self.sun_timer.start(50)
         self._update_clock()
+        self._update_day_night_mode()
+        self.update()
     
     def on_deactivate(self):
         """Called when view becomes inactive."""
         logger.debug("Home view deactivated")
-        # Keep timer running as it's lightweight
+        # Keep timers running
