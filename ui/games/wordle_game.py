@@ -6,7 +6,7 @@ Daily word guessing game. Retro hardware style.
 import logging
 import random
 from datetime import datetime
-from PyQt5.QtCore import Qt, QTimer, QRectF, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, QRect, QRectF, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QColor, QBrush, QPen, QFont, QKeyEvent
 

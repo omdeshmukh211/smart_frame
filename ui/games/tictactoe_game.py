@@ -5,7 +5,7 @@ Classic X-O game with AI opponent. Retro hardware style.
 
 import logging
 import random
-from PyQt5.QtCore import Qt, QTimer, QRectF, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, QRect, QRectF, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QColor, QBrush, QPen, QFont
 
