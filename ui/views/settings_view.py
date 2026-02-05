@@ -1,264 +1,436 @@
 """
-Settings View
-Configuration and system controls.
+Settings View - Retro Hardware Style
+Text-based settings with discrete bar controls.
 """
 
 import logging
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QSpinBox, QComboBox, QCheckBox,
-                             QGroupBox, QFormLayout, QMessageBox)
-from PyQt5.QtGui import QFont
+import subprocess
+from PyQt5.QtCore import Qt, QTimer, QRectF
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMessageBox
+from PyQt5.QtGui import QFont, QKeyEvent, QPainter, QColor, QPen, QBrush
 
 from models.app_state import AppState
 from config.settings_loader import save_settings
 
 logger = logging.getLogger(__name__)
 
+# Add VIEW_MENU to AppState if not present
+if not hasattr(AppState, 'VIEW_MENU'):
+    AppState.VIEW_MENU = 'menu'
+
 
 class SettingsView(QWidget):
     """
-    Settings and configuration view.
+    Settings view - Retro Hardware Style.
+    
+    SETTINGS
+    ▶ Volume
+      Brightness
+      Wi-Fi
+    
+    VOLUME / BRIGHTNESS:
+    - Bar-style discrete steps: [ █ █ █ ░ ░ ]
+    - Left / Right adjusts
+    
+    WI-FI:
+    - List of networks with signal bars
+    - Connected network marked
     """
+    
+    MENU_ITEMS = [
+        ('Volume', 'volume'),
+        ('Brightness', 'brightness'),
+        ('Wi-Fi', 'wifi'),
+    ]
+    
+    STEPS = 10
     
     def __init__(self, app_state: AppState, navigate_callback):
         super().__init__()
         self.app_state = app_state
         self.navigate = navigate_callback
+        
+        self.selected_index = 0
+        self.editing_setting = None  # Which setting is being edited
+        self.volume_level = app_state.get_setting('volume', 70) // 10
+        self.brightness_level = app_state.get_setting('brightness', 80) // 10
+        self.wifi_networks = []
+        self.wifi_selected = 0
+        
         self._init_ui()
+        self.setFocusPolicy(Qt.StrongFocus)
     
     def _init_ui(self):
         """Initialize UI components."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(20)
+        self.setStyleSheet("background-color: #000000;")
+        # We use paintEvent for full control
+    
+    def paintEvent(self, event):
+        """Paint the settings interface."""
+        super().paintEvent(event)
         
-        # Top bar with close button
-        top_bar = QHBoxLayout()
-        top_bar.addStretch()
-        
-        self.close_btn = QPushButton("✕")
-        self.close_btn.setFixedSize(50, 50)
-        self.close_btn.setFont(QFont("Arial", 20, QFont.Bold))
-        self.close_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_HOME))
-        self.close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #F44336;
-                color: white;
-                border-radius: 25px;
-                border: none;
-            }
-            QPushButton:pressed {
-                background-color: #D32F2F;
-            }
-        """)
-        top_bar.addWidget(self.close_btn)
-        layout.addLayout(top_bar)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
         
         # Title
-        title = QLabel("Settings")
-        title.setFont(QFont("Arial", 28, QFont.Bold))
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
+        painter.setPen(QColor(224, 224, 224))
+        font = QFont("Courier New", 32, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(60, 80, "SETTINGS")
         
-        layout.addSpacing(20)
+        if self.editing_setting:
+            self._draw_setting_editor(painter)
+        else:
+            self._draw_menu(painter)
         
-        # Photo settings group
-        photo_group = QGroupBox("Photo Slideshow")
-        photo_group.setFont(QFont("Arial", 16, QFont.Bold))
-        photo_layout = QFormLayout(photo_group)
-        photo_layout.setSpacing(15)
+        # Hint at bottom
+        if self.editing_setting:
+            hint = "[←/→] Adjust   [BACK] Return"
+        else:
+            hint = "[TAP] Edit   [BACK] Menu"
         
-        # Slideshow interval
-        self.interval_spin = QSpinBox()
-        self.interval_spin.setMinimum(1)
-        self.interval_spin.setMaximum(60)
-        self.interval_spin.setValue(self.app_state.get_setting('slideshow_interval', 5))
-        self.interval_spin.setSuffix(" seconds")
-        self.interval_spin.setMinimumHeight(40)
-        self.interval_spin.setFont(QFont("Arial", 14))
-        photo_layout.addRow("Slide Interval:", self.interval_spin)
-        
-        # Transition style
-        self.transition_combo = QComboBox()
-        self.transition_combo.addItems(["fade", "instant"])
-        self.transition_combo.setCurrentText(self.app_state.get_setting('slideshow_transition', 'fade'))
-        self.transition_combo.setMinimumHeight(40)
-        self.transition_combo.setFont(QFont("Arial", 14))
-        photo_layout.addRow("Transition:", self.transition_combo)
-        
-        layout.addWidget(photo_group)
-        
-        # Music settings group
-        music_group = QGroupBox("Music Player")
-        music_group.setFont(QFont("Arial", 16, QFont.Bold))
-        music_layout = QFormLayout(music_group)
-        music_layout.setSpacing(15)
-        
-        # Autoplay
-        self.autoplay_check = QCheckBox("Autoplay on startup")
-        self.autoplay_check.setChecked(self.app_state.get_setting('music_autoplay', False))
-        self.autoplay_check.setFont(QFont("Arial", 14))
-        music_layout.addRow("", self.autoplay_check)
-        
-        # Default volume
-        self.volume_spin = QSpinBox()
-        self.volume_spin.setMinimum(0)
-        self.volume_spin.setMaximum(100)
-        self.volume_spin.setValue(self.app_state.get_setting('volume', 70))
-        self.volume_spin.setSuffix(" %")
-        self.volume_spin.setMinimumHeight(40)
-        self.volume_spin.setFont(QFont("Arial", 14))
-        music_layout.addRow("Default Volume:", self.volume_spin)
-        
-        layout.addWidget(music_group)
-        
-        # System settings group
-        system_group = QGroupBox("System")
-        system_group.setFont(QFont("Arial", 16, QFont.Bold))
-        system_layout = QVBoxLayout(system_group)
-        system_layout.setSpacing(15)
-        
-        # Reboot button
-        self.reboot_btn = self._create_system_button("🔄 Reboot System", "#FF9800")
-        self.reboot_btn.clicked.connect(self._confirm_reboot)
-        system_layout.addWidget(self.reboot_btn)
-        
-        # Shutdown button
-        self.shutdown_btn = self._create_system_button("⏻ Shutdown", "#F44336")
-        self.shutdown_btn.clicked.connect(self._confirm_shutdown)
-        system_layout.addWidget(self.shutdown_btn)
-        
-        layout.addWidget(system_group)
-        
-        # Spacer
-        layout.addStretch()
-        
-        # Action buttons
-        action_layout = QHBoxLayout()
-        
-        # Save button
-        self.save_btn = QPushButton("💾 Save Settings")
-        self.save_btn.setMinimumHeight(60)
-        self.save_btn.setFont(QFont("Arial", 16, QFont.Bold))
-        self.save_btn.clicked.connect(self._save_settings)
-        self.save_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border-radius: 5px;
-                padding: 10px;
-                border: none;
-            }
-            QPushButton:pressed {
-                background-color: #45a049;
-            }
-        """)
-        action_layout.addWidget(self.save_btn)
-        
-        # Home button
-        self.home_btn = QPushButton("🏠 Home")
-        self.home_btn.setMinimumHeight(60)
-        self.home_btn.setFont(QFont("Arial", 16, QFont.Bold))
-        self.home_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_HOME))
-        self.home_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #607D8B;
-                color: white;
-                border-radius: 5px;
-                padding: 10px;
-                border: none;
-            }
-            QPushButton:pressed {
-                background-color: #455A64;
-            }
-        """)
-        action_layout.addWidget(self.home_btn)
-        
-        layout.addLayout(action_layout)
+        painter.setPen(QColor(96, 96, 96))
+        font = QFont("Courier New", 14)
+        painter.setFont(font)
+        painter.drawText(0, self.height() - 40, self.width(), 30, Qt.AlignCenter, hint)
     
-    def _create_system_button(self, text: str, color: str) -> QPushButton:
-        """Create a system control button."""
-        btn = QPushButton(text)
-        btn.setMinimumHeight(50)
-        btn.setFont(QFont("Arial", 14, QFont.Bold))
-        btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {color};
-                color: white;
-                border-radius: 5px;
-                padding: 10px;
-                border: none;
-            }}
-            QPushButton:pressed {{
-                opacity: 0.8;
-            }}
-        """)
-        return btn
+    def _draw_menu(self, painter):
+        """Draw the settings menu list."""
+        y = 150
+        
+        for i, (name, _) in enumerate(self.MENU_ITEMS):
+            if i == self.selected_index:
+                text = f"▶ {name}"
+                color = QColor(255, 255, 255)
+            else:
+                text = f"  {name}"
+                color = QColor(128, 128, 128)
+            
+            painter.setPen(color)
+            font = QFont("Courier New", 24)
+            painter.setFont(font)
+            painter.drawText(60, y, text)
+            
+            y += 50
+    
+    def _draw_setting_editor(self, painter):
+        """Draw the setting editor view."""
+        if self.editing_setting == 'volume':
+            self._draw_bar_editor(painter, "VOLUME", self.volume_level)
+        elif self.editing_setting == 'brightness':
+            self._draw_bar_editor(painter, "BRIGHTNESS", self.brightness_level)
+        elif self.editing_setting == 'wifi':
+            self._draw_wifi_editor(painter)
+    
+    def _draw_bar_editor(self, painter, label, level):
+        """Draw a bar-style discrete editor."""
+        y = 180
+        
+        # Label
+        painter.setPen(QColor(160, 160, 160))
+        font = QFont("Courier New", 18)
+        painter.setFont(font)
+        painter.drawText(60, y, label)
+        
+        y += 40
+        
+        # Bar
+        bar_x = 60
+        bar_w = 400
+        bar_h = 50
+        block_w = bar_w // self.STEPS
+        
+        # Background
+        painter.setPen(QPen(QColor(80, 80, 80), 2))
+        painter.setBrush(QBrush(QColor(20, 20, 20)))
+        painter.drawRect(bar_x, y, bar_w, bar_h)
+        
+        # Blocks
+        painter.setPen(Qt.NoPen)
+        for i in range(self.STEPS):
+            if i < level:
+                painter.setBrush(QBrush(QColor(200, 200, 180)))
+            else:
+                painter.setBrush(QBrush(QColor(40, 40, 40)))
+            painter.drawRect(bar_x + i * block_w + 4, y + 4, block_w - 8, bar_h - 8)
+        
+        # Value display
+        y += 70
+        painter.setPen(QColor(224, 224, 224))
+        font = QFont("Courier New", 24)
+        painter.setFont(font)
+        painter.drawText(60, y, f"{level * 10}%")
+        
+        # Instructions
+        y += 60
+        painter.setPen(QColor(128, 128, 128))
+        font = QFont("Courier New", 16)
+        painter.setFont(font)
+        painter.drawText(60, y, "[ − ]              [ + ]")
+        
+        # Store rects for click detection
+        self._dec_rect = QRectF(60, y - 25, 60, 40)
+        self._inc_rect = QRectF(bar_x + bar_w - 60, y - 25, 60, 40)
+        self._bar_rect = QRectF(bar_x, 220, bar_w, bar_h)
+    
+    def _draw_wifi_editor(self, painter):
+        """Draw WiFi network list."""
+        y = 180
+        
+        # Scan networks if empty
+        if not self.wifi_networks:
+            self._scan_wifi()
+        
+        if not self.wifi_networks:
+            painter.setPen(QColor(128, 128, 128))
+            font = QFont("Courier New", 18)
+            painter.setFont(font)
+            painter.drawText(60, y, "No networks found")
+            painter.drawText(60, y + 40, "Scanning...")
+            return
+        
+        for i, network in enumerate(self.wifi_networks[:8]):
+            ssid = network.get('ssid', 'Unknown')
+            signal = network.get('signal', 0)
+            connected = network.get('connected', False)
+            
+            if i == self.wifi_selected:
+                prefix = "▶ "
+                color = QColor(255, 255, 255)
+            else:
+                prefix = "  "
+                color = QColor(128, 128, 128)
+            
+            # SSID
+            if len(ssid) > 20:
+                ssid = ssid[:17] + "..."
+            
+            # Signal bars
+            bars = self._signal_to_bars(signal)
+            
+            # Connected indicator
+            status = " ✓" if connected else ""
+            
+            text = f"{prefix}{ssid:<22} {bars}{status}"
+            
+            painter.setPen(color)
+            font = QFont("Courier New", 18)
+            painter.setFont(font)
+            painter.drawText(60, y, text)
+            
+            y += 40
+    
+    def _signal_to_bars(self, signal):
+        """Convert signal strength to bar display."""
+        if signal >= 80:
+            return "████"
+        elif signal >= 60:
+            return "███░"
+        elif signal >= 40:
+            return "██░░"
+        elif signal >= 20:
+            return "█░░░"
+        else:
+            return "░░░░"
+    
+    def _scan_wifi(self):
+        """Scan for WiFi networks."""
+        self.wifi_networks = []
+        
+        try:
+            # Try nmcli on Linux
+            result = subprocess.run(
+                ['nmcli', '-t', '-f', 'SSID,SIGNAL,ACTIVE', 'device', 'wifi', 'list'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
+                for line in result.stdout.strip().split('\n'):
+                    if line:
+                        parts = line.split(':')
+                        if len(parts) >= 3 and parts[0]:
+                            self.wifi_networks.append({
+                                'ssid': parts[0],
+                                'signal': int(parts[1]) if parts[1].isdigit() else 0,
+                                'connected': parts[2] == 'yes'
+                            })
+        except Exception as e:
+            logger.debug(f"WiFi scan not available: {e}")
+            # Add dummy data for testing
+            self.wifi_networks = [
+                {'ssid': 'Home_Network', 'signal': 85, 'connected': True},
+                {'ssid': 'Neighbor_5G', 'signal': 45, 'connected': False},
+                {'ssid': 'Guest_WiFi', 'signal': 30, 'connected': False},
+            ]
+    
+    def mousePressEvent(self, event):
+        """Handle mouse clicks."""
+        pos = event.pos()
+        
+        if self.editing_setting in ('volume', 'brightness'):
+            # Check increment/decrement buttons
+            if hasattr(self, '_dec_rect') and self._dec_rect.contains(pos.x(), pos.y()):
+                self._adjust_level(-1)
+                return
+            if hasattr(self, '_inc_rect') and self._inc_rect.contains(pos.x(), pos.y()):
+                self._adjust_level(1)
+                return
+            if hasattr(self, '_bar_rect') and self._bar_rect.contains(pos.x(), pos.y()):
+                # Click on bar to set level
+                rel_x = pos.x() - self._bar_rect.x()
+                level = int((rel_x / self._bar_rect.width()) * self.STEPS)
+                level = max(0, min(self.STEPS, level))
+                if self.editing_setting == 'volume':
+                    self.volume_level = level
+                else:
+                    self.brightness_level = level
+                self._apply_setting()
+                return
+        
+        if not self.editing_setting:
+            # Check if clicked on a menu item
+            y = 125
+            for i, _ in enumerate(self.MENU_ITEMS):
+                item_rect = QRectF(60, y, 400, 45)
+                if item_rect.contains(pos.x(), pos.y()):
+                    self.selected_index = i
+                    self._enter_setting()
+                    return
+                y += 50
+        
+        # Click elsewhere goes back
+        self._go_back()
+    
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handle keyboard navigation."""
+        key = event.key()
+        
+        if self.editing_setting:
+            if key == Qt.Key_Escape or key == Qt.Key_Backspace:
+                self._exit_setting()
+            elif key == Qt.Key_Left:
+                self._adjust_level(-1)
+            elif key == Qt.Key_Right:
+                self._adjust_level(1)
+            elif key == Qt.Key_Up and self.editing_setting == 'wifi':
+                if self.wifi_networks:
+                    self.wifi_selected = (self.wifi_selected - 1) % len(self.wifi_networks)
+                    self.update()
+            elif key == Qt.Key_Down and self.editing_setting == 'wifi':
+                if self.wifi_networks:
+                    self.wifi_selected = (self.wifi_selected + 1) % len(self.wifi_networks)
+                    self.update()
+            elif key in (Qt.Key_Return, Qt.Key_Enter) and self.editing_setting == 'wifi':
+                self._connect_wifi()
+        else:
+            if key == Qt.Key_Up:
+                self.selected_index = (self.selected_index - 1) % len(self.MENU_ITEMS)
+                self.update()
+            elif key == Qt.Key_Down:
+                self.selected_index = (self.selected_index + 1) % len(self.MENU_ITEMS)
+                self.update()
+            elif key in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space):
+                self._enter_setting()
+            elif key == Qt.Key_Escape:
+                self._go_back()
+            else:
+                super().keyPressEvent(event)
+    
+    def _enter_setting(self):
+        """Enter a setting for editing."""
+        _, setting_id = self.MENU_ITEMS[self.selected_index]
+        self.editing_setting = setting_id
+        
+        if setting_id == 'wifi':
+            self.wifi_selected = 0
+            self._scan_wifi()
+        
+        self.update()
+    
+    def _exit_setting(self):
+        """Exit setting editing."""
+        self._save_settings()
+        self.editing_setting = None
+        self.update()
+    
+    def _adjust_level(self, delta):
+        """Adjust the current setting level."""
+        if self.editing_setting == 'volume':
+            self.volume_level = max(0, min(self.STEPS, self.volume_level + delta))
+        elif self.editing_setting == 'brightness':
+            self.brightness_level = max(0, min(self.STEPS, self.brightness_level + delta))
+        
+        self._apply_setting()
+        self.update()
+    
+    def _apply_setting(self):
+        """Apply the current setting immediately."""
+        if self.editing_setting == 'volume':
+            volume = self.volume_level * 10
+            self.app_state.set_setting('volume', volume)
+            # Apply system volume if possible
+            try:
+                subprocess.run(['amixer', 'sset', 'Master', f'{volume}%'], 
+                             capture_output=True, timeout=2)
+            except:
+                pass
+        elif self.editing_setting == 'brightness':
+            brightness = self.brightness_level * 10
+            self.app_state.set_setting('brightness', brightness)
+            # Apply system brightness if possible
+            try:
+                subprocess.run(['brightnessctl', 'set', f'{brightness}%'],
+                             capture_output=True, timeout=2)
+            except:
+                pass
+    
+    def _connect_wifi(self):
+        """Connect to selected WiFi network."""
+        if not self.wifi_networks or self.wifi_selected >= len(self.wifi_networks):
+            return
+        
+        network = self.wifi_networks[self.wifi_selected]
+        ssid = network.get('ssid', '')
+        
+        logger.info(f"Connecting to WiFi: {ssid}")
+        
+        try:
+            subprocess.run(['nmcli', 'device', 'wifi', 'connect', ssid],
+                         capture_output=True, timeout=10)
+            self._scan_wifi()
+            self.update()
+        except Exception as e:
+            logger.error(f"WiFi connection failed: {e}")
     
     def _save_settings(self):
-        """Save settings to config file."""
-        # Update app state
-        self.app_state.set_setting('slideshow_interval', self.interval_spin.value())
-        self.app_state.set_setting('slideshow_transition', self.transition_combo.currentText())
-        self.app_state.set_setting('music_autoplay', self.autoplay_check.isChecked())
-        self.app_state.set_setting('volume', self.volume_spin.value())
-        
-        # Save to file
-        success = save_settings(self.app_state.get_all_settings())
-        
-        if success:
-            QMessageBox.information(self, "Settings Saved", "Settings have been saved successfully.")
-        else:
-            QMessageBox.warning(self, "Save Failed", "Failed to save settings to file.")
+        """Save settings to file."""
+        try:
+            settings = self.app_state.get_all_settings()
+            save_settings(settings)
+            logger.info("Settings saved")
+        except Exception as e:
+            logger.error(f"Failed to save settings: {e}")
     
-    def _confirm_reboot(self):
-        """Confirm and reboot system."""
-        reply = QMessageBox.question(
-            self,
-            "Confirm Reboot",
-            "Are you sure you want to reboot the system?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            logger.info("Rebooting system...")
-            import subprocess
-            try:
-                subprocess.run(['sudo', 'reboot'], check=True)
-            except Exception as e:
-                logger.error(f"Reboot failed: {e}")
-                QMessageBox.warning(self, "Reboot Failed", f"Failed to reboot: {e}")
-    
-    def _confirm_shutdown(self):
-        """Confirm and shutdown system."""
-        reply = QMessageBox.question(
-            self,
-            "Confirm Shutdown",
-            "Are you sure you want to shutdown the system?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            logger.info("Shutting down system...")
-            import subprocess
-            try:
-                subprocess.run(['sudo', 'shutdown', '-h', 'now'], check=True)
-            except Exception as e:
-                logger.error(f"Shutdown failed: {e}")
-                QMessageBox.warning(self, "Shutdown Failed", f"Failed to shutdown: {e}")
+    def _go_back(self):
+        """Go back."""
+        if self.editing_setting:
+            self._exit_setting()
+        elif self.navigate:
+            self.navigate(AppState.VIEW_MENU)
     
     def on_activate(self):
         """Called when view becomes active."""
         logger.debug("Settings view activated")
-        # Reload current settings
-        self.interval_spin.setValue(self.app_state.get_setting('slideshow_interval', 5))
-        self.transition_combo.setCurrentText(self.app_state.get_setting('slideshow_transition', 'fade'))
-        self.autoplay_check.setChecked(self.app_state.get_setting('music_autoplay', False))
-        self.volume_spin.setValue(self.app_state.get_setting('volume', 70))
+        self.selected_index = 0
+        self.editing_setting = None
+        self.volume_level = self.app_state.get_setting('volume', 70) // 10
+        self.brightness_level = self.app_state.get_setting('brightness', 80) // 10
+        self.setFocus()
+        self.update()
     
     def on_deactivate(self):
         """Called when view becomes inactive."""
         logger.debug("Settings view deactivated")
+        self._save_settings()

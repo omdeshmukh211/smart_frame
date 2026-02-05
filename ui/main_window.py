@@ -1,37 +1,52 @@
 """
-Main Window
+Main Window - Retro Hardware Style
 Root window containing navigation and view stack.
+Fixed resolution display (1024x600).
 """
 
 import logging
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QFont, QFontDatabase
 
 from models.app_state import AppState
 from ui.views.idle_view import IdleView
 from ui.views.home_view import HomeView
+from ui.views.menu_view import MenuView
 from ui.views.photo_view import PhotoView
 from ui.views.music_view import MusicView
 from ui.views.settings_view import SettingsView
 from ui.views.messages_view import MessagesView
 from ui.views.games_view import GamesView
+from ui.widgets.message_overlay import MessageOverlay
 from services.photo_service import PhotoService
 from services.music_service import MusicService
 
 logger = logging.getLogger(__name__)
 
+# Add VIEW_MENU to AppState if not present
+if not hasattr(AppState, 'VIEW_MENU'):
+    AppState.VIEW_MENU = 'menu'
+
 
 class MainWindow(QMainWindow):
     """
-    Main application window.
-    Manages view navigation and background services.
+    Main application window - Retro Hardware Style.
+    Fixed resolution display device interface.
+    
+    Screen Architecture:
+    [ IDLE ] ← default → tap → [ HOME ] → tap → [ MENU ]
     """
+
+    # Fixed display resolution
+    DISPLAY_WIDTH = 1024
+    DISPLAY_HEIGHT = 600
 
     def __init__(self, app_state: AppState, fullscreen=True):
         super().__init__()
         self.app_state = app_state
         self.fullscreen = fullscreen
+        self.message_overlay = None
 
         # Background services
         self.photo_service = PhotoService(app_state)
@@ -48,7 +63,7 @@ class MainWindow(QMainWindow):
         self.idle_timer.start(5000)
 
         self.photo_service.start()
-        logger.info("MainWindow initialized")
+        logger.info("MainWindow initialized - Retro Hardware UI")
 
     def _init_ui(self):
         self.setWindowTitle("Smart Frame")
@@ -57,12 +72,12 @@ class MainWindow(QMainWindow):
             self.showFullScreen()
             self.setCursor(Qt.BlankCursor)
         else:
-            self.resize(
-                self.app_state.get_setting("display_width", 1024),
-                self.app_state.get_setting("display_height", 600),
-            )
+            self.setFixedSize(self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT)
 
         self.setWindowFlags(Qt.FramelessWindowHint)
+        
+        # Pure black background
+        self.setStyleSheet("background-color: #000000;")
 
         central = QWidget(self)
         self.setCentralWidget(central)
@@ -73,14 +88,10 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         layout.addWidget(self.stack)
 
-        # Views
+        # Views - Retro Hardware Style
         self.idle_view = IdleView(self.app_state, lambda: self._navigate(AppState.VIEW_HOME))
-        self.home_view = HomeView(
-            self.app_state,
-            self._navigate,
-            show_messages_callback=lambda: self._navigate(AppState.VIEW_MESSAGES),
-            show_games_callback=lambda: self._navigate(AppState.VIEW_GAMES),
-        )
+        self.home_view = HomeView(self.app_state, self._navigate)
+        self.menu_view = MenuView(self.app_state, self._navigate)
         self.photo_view = PhotoView(self.app_state, self.photo_service, self._navigate)
         self.music_view = MusicView(self.app_state, self.music_service, self._navigate)
         self.settings_view = SettingsView(self.app_state, self._navigate)
@@ -90,6 +101,7 @@ class MainWindow(QMainWindow):
         self.views = {
             AppState.VIEW_IDLE: self.idle_view,
             AppState.VIEW_HOME: self.home_view,
+            AppState.VIEW_MENU: self.menu_view,
             AppState.VIEW_PHOTOS: self.photo_view,
             AppState.VIEW_MUSIC: self.music_view,
             AppState.VIEW_SETTINGS: self.settings_view,
@@ -100,6 +112,10 @@ class MainWindow(QMainWindow):
         for view in self.views.values():
             self.stack.addWidget(view)
 
+        # Message overlay (always on top)
+        self.message_overlay = MessageOverlay(central)
+        self.message_overlay.dismissed.connect(self._on_overlay_dismissed)
+
         self._navigate(AppState.VIEW_IDLE)
         self._setup_shortcuts()
 
@@ -108,16 +124,34 @@ class MainWindow(QMainWindow):
 
         QShortcut(QKeySequence("Ctrl+Q"), self).activated.connect(self.close)
         QShortcut(QKeySequence("F11"), self).activated.connect(self._toggle_fullscreen)
+        QShortcut(QKeySequence("Escape"), self).activated.connect(self._handle_back)
 
     def _toggle_fullscreen(self):
         if self.isFullScreen():
             self.showNormal()
+            self.setFixedSize(self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT)
             self.setCursor(Qt.ArrowCursor)
         else:
             self.showFullScreen()
             self.setCursor(Qt.BlankCursor)
 
+    def _handle_back(self):
+        """Handle back/escape navigation."""
+        current = self.app_state.get_current_view()
+        if current == AppState.VIEW_MENU:
+            self._navigate(AppState.VIEW_HOME)
+        elif current == AppState.VIEW_HOME:
+            self._navigate(AppState.VIEW_IDLE)
+        elif current in (AppState.VIEW_GAMES, AppState.VIEW_MUSIC, 
+                        AppState.VIEW_MESSAGES, AppState.VIEW_SETTINGS,
+                        AppState.VIEW_PHOTOS):
+            self._navigate(AppState.VIEW_MENU)
+
     def _navigate(self, view_name: str):
+        # Don't navigate if overlay is showing
+        if self.message_overlay and self.message_overlay.isVisible():
+            return
+            
         if view_name not in self.views:
             return
 
@@ -135,10 +169,32 @@ class MainWindow(QMainWindow):
                     view.on_deactivate()
 
     def _check_idle(self):
+        # Don't go idle if overlay is showing
+        if self.message_overlay and self.message_overlay.isVisible():
+            return
         if self.app_state.should_go_idle():
             self._navigate(AppState.VIEW_IDLE)
 
+    def show_system_message(self, title: str, body: str):
+        """Show a system message overlay."""
+        if self.message_overlay:
+            self.message_overlay.show_message(title, body)
+    
+    def _on_overlay_dismissed(self):
+        """Called when message overlay is dismissed."""
+        logger.info("Message overlay dismissed, resuming normal operation")
+
     def eventFilter(self, obj, event):
+        # If overlay is visible, capture all input
+        if self.message_overlay and self.message_overlay.isVisible():
+            if event.type() in (
+                QEvent.MouseButtonPress,
+                QEvent.KeyPress,
+                QEvent.TouchBegin,
+            ):
+                # Let overlay handle it
+                return False
+        
         if event.type() in (
             QEvent.MouseButtonPress,
             QEvent.MouseMove,
