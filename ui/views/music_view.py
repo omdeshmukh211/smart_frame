@@ -88,7 +88,15 @@ class MusicView(QWidget):
         """)
         self.search_input.setGeometry(60, 50, 400, 45)
         self.search_input.returnPressed.connect(self._search_and_play)
-        self.search_input.mousePressEvent = self._on_search_clicked
+        # Ensure search input gets focus on click
+        self.search_input.setFocusPolicy(Qt.ClickFocus)
+        
+    def _on_search_clicked(self, event):
+        """Handle search input click to ensure focus and keyboard."""
+        self.search_input.setFocus()
+        self.search_input.activateWindow()
+        # Call original mousePressEvent
+        QLineEdit.mousePressEvent(self.search_input, event)
     
     def _init_timers(self):
         """Initialize timers."""

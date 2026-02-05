@@ -9,6 +9,11 @@ from datetime import datetime
 from PyQt5.QtCore import Qt, QTimer, QRectF, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QColor, QBrush, QPen, QFont, QKeyEvent
+import sys
+import os
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from five_letter_words import FIVE_LETTER_WORDS
 
 logger = logging.getLogger(__name__)
 
@@ -25,20 +30,11 @@ class WordleWidget(QWidget):
     
     game_over = pyqtSignal(bool, int)  # Emit (won, attempts_used)
     
-    # Word list (common 5-letter words)
-    WORD_LIST = [
-        'APPLE', 'BEACH', 'BRAIN', 'BREAD', 'BRUSH', 'CHAIR', 'CHESS',
-        'CLOUD', 'CORAL', 'DREAM', 'EARTH', 'FLAME', 'FLASH', 'FRUIT',
-        'GRAPE', 'GRASS', 'GREEN', 'HAPPY', 'HEART', 'HONEY', 'HOUSE',
-        'JUICE', 'LEMON', 'LIGHT', 'LUNAR', 'MAPLE', 'MELON', 'MONEY',
-        'NIGHT', 'OCEAN', 'OLIVE', 'PAINT', 'PEACE', 'PEACH', 'PIANO',
-        'PLANT', 'POWER', 'PRIDE', 'QUIET', 'RAINY', 'RIVER', 'ROYAL',
-        'SHORE', 'SLEEP', 'SMILE', 'SNOWY', 'SOLAR', 'SPACE', 'SPICE',
-        'STAND', 'STEEL', 'STONE', 'STORM', 'STUDY', 'SUGAR', 'SUNNY',
-        'SWEET', 'TABLE', 'TIGER', 'TOAST', 'TODAY', 'TOWER', 'TRAIN',
-        'TRUST', 'TRUTH', 'TULIP', 'URBAN', 'VALUE', 'VITAL', 'VIVID',
-        'WATCH', 'WATER', 'WHEAT', 'WHEEL', 'WHITE', 'WORLD', 'WORTH'
-    ]
+    # Word list from Collins Scrabble Words (2019) - 12,972 five-letter words
+    WORD_LIST = FIVE_LETTER_WORDS
+    
+    # Create a set for fast lookup during validation
+    VALID_WORDS = set(FIVE_LETTER_WORDS)
     
     # Keyboard layout
     KEYBOARD_ROWS = [
@@ -59,6 +55,7 @@ class WordleWidget(QWidget):
         self.is_game_over = False
         self.is_won = False
         self.letter_states = {}  # Track letter colors for keyboard
+        self.replay_button_rect = QRect()  # For replay button
         
         self._init_ui()
         self.reset_game()
@@ -68,6 +65,18 @@ class WordleWidget(QWidget):
         self.setStyleSheet("background-color: #000000;")
         self.setFocusPolicy(Qt.StrongFocus)
         self.setMinimumSize(400, 600)
+        self.invalid_word_flash = False  # For visual feedback
+    
+    def show_invalid_word_feedback(self):
+        """Show visual feedback when an invalid word is entered."""
+        self.invalid_word_flash = True
+        self.update()
+        QTimer.singleShot(200, self._clear_invalid_feedback)
+    
+    def _clear_invalid_feedback(self):
+        """Clear invalid word visual feedback."""
+        self.invalid_word_flash = False
+        self.update()
     
     def reset_game(self):
         """Reset the game with a new word."""
@@ -92,10 +101,14 @@ class WordleWidget(QWidget):
         if len(self.current_guess) != self.WORD_LENGTH:
             return
         
-        if self.current_guess not in self.WORD_LIST:
-            # Invalid word - could add visual feedback
+        # Validate that the word is in the valid words list
+        if self.current_guess not in self.VALID_WORDS:
             logger.info(f"Invalid word: {self.current_guess}")
+            # Show error feedback (flash the current row)
+            self.show_invalid_word_feedback()
             return
+        
+        logger.info(f"Guessing: {self.current_guess}")
         
         # Add to attempts
         self.attempts.append(self.current_guess)
@@ -155,6 +168,16 @@ class WordleWidget(QWidget):
         
         w, h = self.width(), self.height()
         
+        # Draw EXIT button at top-right
+        painter.setPen(QColor(255, 100, 100))
+        painter.setBrush(QBrush(QColor(255, 100, 100, 50)))
+        exit_rect = QRect(w - 80, 10, 70, 40)
+        painter.drawRoundedRect(exit_rect, 5, 5)
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont("Arial", 14, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(exit_rect, Qt.AlignCenter, "EXIT")
+        
         # Draw title
         painter.setPen(QColor(200, 200, 200))
         font = QFont("Courier New", 24, QFont.Bold)
@@ -196,7 +219,9 @@ class WordleWidget(QWidget):
             for col_idx in range(self.WORD_LENGTH):
                 x = start_x + col_idx * (cell_size + spacing)
                 letter = self.current_guess[col_idx] if col_idx < len(self.current_guess) else ''
-                self._draw_cell(painter, x, y, cell_size, letter, QColor(40, 40, 40))
+                # Flash red if invalid word was entered
+                cell_color = QColor(150, 40, 40) if self.invalid_word_flash else QColor(40, 40, 40)
+                self._draw_cell(painter, x, y, cell_size, letter, cell_color)
         
         # Draw empty rows
         for row_idx in range(len(self.attempts) + (0 if self.is_game_over else 1), self.MAX_ATTEMPTS):
@@ -284,16 +309,26 @@ class WordleWidget(QWidget):
         painter.setFont(font)
         painter.drawText(0, 440, w, 30, Qt.AlignCenter, text)
         
-        painter.setPen(QColor(150, 150, 150))
-        font = QFont("Courier New", 12)
+        # Draw replay button
+        button_width, button_height = 120, 40
+        button_x = (w - button_width) // 2
+        button_y = 480
+        self.replay_button_rect = QRect(button_x, button_y, button_width, button_height)
+        
+        # Draw button background
+        painter.setBrush(QColor(100, 200, 100))
+        painter.setPen(QColor(80, 160, 80))
+        painter.drawRoundedRect(self.replay_button_rect, 8, 8)
+        
+        # Draw button text
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont("Courier New", 14, QFont.Bold)
         painter.setFont(font)
-        painter.drawText(0, 470, w, 20, Qt.AlignCenter, "Press R to restart")
+        painter.drawText(self.replay_button_rect, Qt.AlignCenter, "REPLAY")
     
     def keyPressEvent(self, event: QKeyEvent):
         """Handle keyboard input."""
         if self.is_game_over:
-            if event.key() == Qt.Key_R:
-                self.reset_game()
             return
         
         key = event.key()
@@ -320,13 +355,20 @@ class WordleWidget(QWidget):
     
     def mousePressEvent(self, event):
         """Handle mouse/touch input for on-screen keyboard."""
-        if self.is_game_over:
-            # Tap to restart
-            self.reset_game()
-            return
-        
         w, h = self.width(), self.height()
         x, y = event.pos().x(), event.pos().y()
+        
+        # Check if EXIT button was clicked
+        exit_rect = QRect(w - 80, 10, 70, 40)
+        if exit_rect.contains(event.pos()):
+            self.parent()._go_back()  # Exit to games list
+            return
+        
+        if self.is_game_over:
+            # Check if replay button was clicked
+            if hasattr(self, 'replay_button_rect') and self.replay_button_rect.contains(event.pos()):
+                self.reset_game()
+            return
         
         key_w = 35
         key_h = 45

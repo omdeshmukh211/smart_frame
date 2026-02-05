@@ -31,6 +31,7 @@ class TicTacToeWidget(QWidget):
         self.is_game_over = False
         self.winner = None
         self.winning_line = None
+        self.replay_button_rect = QRect()  # For replay button
         
         self._init_ui()
     
@@ -178,6 +179,16 @@ class TicTacToeWidget(QWidget):
         
         w, h = self.width(), self.height()
         
+        # Draw EXIT button at top-right
+        painter.setPen(QColor(255, 100, 100))
+        painter.setBrush(QBrush(QColor(255, 100, 100, 50)))
+        exit_rect = QRect(w - 80, 10, 70, 40)
+        painter.drawRoundedRect(exit_rect, 5, 5)
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont("Arial", 14, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(exit_rect, Qt.AlignCenter, "EXIT")
+        
         # Calculate board size
         board_size = min(w, h) - 100
         cell_size = board_size // 3
@@ -226,10 +237,22 @@ class TicTacToeWidget(QWidget):
             painter.setFont(font)
             painter.drawText(0, offset_y - 50, w, 40, Qt.AlignCenter, status)
             
-            painter.setPen(QColor(150, 150, 150))
-            font = QFont("Courier New", 14)
+            # Draw replay button
+            button_width, button_height = 120, 40
+            button_x = (w - button_width) // 2
+            button_y = h - 80
+            self.replay_button_rect = QRect(button_x, button_y, button_width, button_height)
+            
+            # Draw button background
+            painter.setBrush(QColor(100, 200, 100))
+            painter.setPen(QColor(80, 160, 80))
+            painter.drawRoundedRect(self.replay_button_rect, 8, 8)
+            
+            # Draw button text
+            painter.setPen(QColor(255, 255, 255))
+            font = QFont("Courier New", 14, QFont.Bold)
             painter.setFont(font)
-            painter.drawText(0, h - 40, w, 30, Qt.AlignCenter, "Tap to play again")
+            painter.drawText(self.replay_button_rect, Qt.AlignCenter, "REPLAY")
         else:
             status = "Your turn (X)" if self.current_player == 'X' else "AI thinking (O)..."
             painter.drawText(0, offset_y - 50, w, 40, Qt.AlignCenter, status)
@@ -276,16 +299,25 @@ class TicTacToeWidget(QWidget):
     
     def mousePressEvent(self, event):
         """Handle mouse/touch input."""
+        w, h = self.width(), self.height()
+        x, y = event.pos().x(), event.pos().y()
+        
+        # Check if EXIT button was clicked
+        exit_rect = QRect(w - 80, 10, 70, 40)
+        if exit_rect.contains(event.pos()):
+            self.parent()._go_back()  # Exit to games list
+            return
+        
         if self.is_game_over:
-            # Tap to restart
-            self.reset_game()
+            # Check if replay button was clicked
+            if hasattr(self, 'replay_button_rect') and self.replay_button_rect.contains(event.pos()):
+                self.reset_game()
             return
         
         if self.current_player != 'X':
             # Not player's turn
             return
         
-        w, h = self.width(), self.height()
         board_size = min(w, h) - 100
         cell_size = board_size // 3
         offset_x = (w - board_size) // 2

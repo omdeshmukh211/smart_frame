@@ -27,7 +27,7 @@ class PhotoService(QThread):
     """
     
     # Supported image formats
-    SUPPORTED_FORMATS = {'.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG', '.gif', '.GIF'}
+    SUPPORTED_FORMATS = {'.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG', '.gif', '.GIF', '.heic', '.HEIC'}
     
     photos_updated = pyqtSignal(int)  # Emitted when photo list changes
     

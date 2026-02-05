@@ -13,7 +13,6 @@
 
 [Unit]
 Description=Smart Frame Kiosk (PyQt5)
-Documentation=https://github.com/yourrepo/smart_frame
 After=graphical.target network.target
 Wants=graphical.target
 StartLimitIntervalSec=60
@@ -38,13 +37,22 @@ Environment=XAUTHORITY=/home/raspberrypi4/.Xauthority
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
 Environment=XDG_RUNTIME_DIR=/run/user/1000
 
-# Mesa LLVMpipe software rendering (required for Raspberry Pi 4)
-Environment=LIBGL_ALWAYS_SOFTWARE=true
-Environment=GALLIUM_DRIVER=llvmpipe
+# Qt platform settings for headless operation
+Environment=QT_QPA_PLATFORM=xcb
 Environment=QT_XCB_GL_INTEGRATION=none
 
-# Qt/WebEngine settings
-Environment=QT_QPA_PLATFORM=xcb
+# Kiosk mode settings - hide desktop panels and mouse cursor
+Environment=KIOSK_MODE=true
+Environment=LXDE_AUTOSTART_DISABLE=true
+
+# Hide cursor system-wide for kiosk mode
+Environment=QT_QPA_PLATFORM_PLUGIN_PATH=
+Environment=CURSOR_VISIBLE=false
+
+# Disable screensaver and power management
+Environment=XSET_ARGS=s off -dpms
+
+# Disable Qt WebEngine sandbox (not used but prevents warnings)
 Environment=QTWEBENGINE_DISABLE_SANDBOX=1
 
 # Memory optimization
@@ -53,8 +61,8 @@ Environment=MALLOC_TRIM_THRESHOLD_=65536
 # Disable core dumps
 Environment=PYTHONDONTWRITEBYTECODE=1
 
-# The command to run
-ExecStart=/usr/bin/python3 /home/raspberrypi4/projects/smart_frame/qt_launcher.py
+# The command to run - use system Python directly with fullscreen flag
+ExecStart=/usr/bin/python3 /home/raspberrypi4/projects/smart_frame/main.py --fullscreen
 
 # Restart policy
 Restart=on-failure
