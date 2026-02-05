@@ -1,80 +1,38 @@
 """
-Messages View
-Display and manage messages sent to the smart frame.
+Messages View - Retro Hardware Style
+Text-based message list with arrow selection.
 """
 
 import logging
 import json
 from datetime import datetime
 from pathlib import Path
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QScrollArea, QFrame)
-from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea
+from PyQt5.QtGui import QFont, QKeyEvent, QPainter, QColor
 
 from models.app_state import AppState
 
 logger = logging.getLogger(__name__)
 
-
-class MessageCard(QFrame):
-    """Individual message card widget."""
-    
-    def __init__(self, message_data, parent=None):
-        super().__init__(parent)
-        self.message_data = message_data
-        self._init_ui()
-    
-    def _init_ui(self):
-        """Initialize UI."""
-        self.setStyleSheet("""
-            QFrame {
-                background: rgba(255, 255, 255, 0.1);
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-radius: 12px;
-                padding: 15px;
-            }
-        """)
-        
-        layout = QVBoxLayout(self)
-        layout.setSpacing(10)
-        
-        # Message content
-        content_label = QLabel(self.message_data.get('text', ''))
-        content_label.setWordWrap(True)
-        content_label.setStyleSheet("""
-            color: #fff;
-            font-size: 18px;
-            font-weight: 500;
-        """)
-        layout.addWidget(content_label)
-        
-        # Timestamp
-        timestamp = self.message_data.get('timestamp', '')
-        if timestamp:
-            try:
-                dt = datetime.fromisoformat(timestamp)
-                time_str = dt.strftime("%b %d, %Y at %I:%M %p")
-            except:
-                time_str = timestamp
-        else:
-            time_str = "Unknown time"
-        
-        time_label = QLabel(time_str)
-        time_label.setStyleSheet("""
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-        """)
-        time_label.setAlignment(Qt.AlignRight)
-        layout.addWidget(time_label)
+# Add VIEW_MENU to AppState if not present
+if not hasattr(AppState, 'VIEW_MENU'):
+    AppState.VIEW_MENU = 'menu'
 
 
 class MessagesView(QWidget):
     """
-    Messages view showing all received messages.
-    """
+    Messages view - Retro Hardware Style.
     
-    closed = pyqtSignal()
+    MESSAGES LIST:
+    ▶ 07:30 Drink Water
+      09:00 Stand Up
+      13:00 Meeting
+    
+    - List only, one-line summaries
+    - Unread messages visually marked
+    - Select to view detail
+    """
     
     def __init__(self, app_state: AppState, navigate_callback=None):
         super().__init__()
@@ -82,160 +40,269 @@ class MessagesView(QWidget):
         self.navigate = navigate_callback
         self.messages_file = Path("messages/message_history.json")
         
+        self.messages = []
+        self.selected_index = 0
+        self.viewing_detail = False
+        self.current_message = None
+        
         self._init_ui()
-        self._load_messages()
+        self.setFocusPolicy(Qt.StrongFocus)
     
     def _init_ui(self):
         """Initialize UI components."""
+        self.setStyleSheet("background-color: #000000;")
+        
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(60, 60, 60, 60)
         layout.setSpacing(0)
         
-        # Set dark background
-        self.setStyleSheet("""
-            QWidget {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #1a1a2e,
-                    stop:0.5 #16213e,
-                    stop:1 #0f3460
-                );
-            }
-        """)
-        
-        # Header
-        header = QFrame()
-        header.setStyleSheet("""
-            QFrame {
-                background: rgba(0, 0, 0, 0.3);
-                border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            }
-        """)
-        header.setFixedHeight(80)
-        header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(20, 0, 20, 0)
-        
         # Title
-        title = QLabel("💬 Messages")
-        title.setStyleSheet("""
-            color: #fff;
-            font-size: 28px;
-            font-weight: bold;
-            background: transparent;
-        """)
-        header_layout.addWidget(title)
+        self.title_label = QLabel("MESSAGES")
+        self.title_label.setFont(QFont("Courier New", 32, QFont.Bold))
+        self.title_label.setStyleSheet("color: #E0E0E0; background: transparent;")
+        self.title_label.setAlignment(Qt.AlignLeft)
+        layout.addWidget(self.title_label)
         
-        header_layout.addStretch()
+        layout.addSpacing(30)
         
-        # Close button
-        close_btn = QPushButton("✕")
-        close_btn.setFixedSize(50, 50)
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background: rgba(255, 255, 255, 0.1);
-                color: #fff;
-                font-size: 24px;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-radius: 25px;
-            }
-            QPushButton:hover {
-                background: rgba(255, 255, 255, 0.2);
-            }
-            QPushButton:pressed {
-                background: rgba(255, 255, 255, 0.3);
-            }
-        """)
-        close_btn.clicked.connect(self._close)
-        close_btn.setCursor(Qt.PointingHandCursor)
-        header_layout.addWidget(close_btn)
+        # Separator
+        self.separator = QLabel("─" * 50)
+        self.separator.setFont(QFont("Courier New", 14))
+        self.separator.setStyleSheet("color: #404040; background: transparent;")
+        layout.addWidget(self.separator)
         
-        layout.addWidget(header)
+        layout.addSpacing(20)
         
-        # Scrollable message list
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("""
-            QScrollArea {
-                background: transparent;
-                border: none;
-            }
-            QScrollBar:vertical {
-                background: rgba(255, 255, 255, 0.1);
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background: rgba(255, 255, 255, 0.3);
-                border-radius: 6px;
-            }
-        """)
+        # Message list container
+        self.list_container = QWidget()
+        self.list_container.setStyleSheet("background: transparent;")
+        self.list_layout = QVBoxLayout(self.list_container)
+        self.list_layout.setContentsMargins(0, 0, 0, 0)
+        self.list_layout.setSpacing(10)
         
-        # Container for messages
-        self.messages_container = QWidget()
-        self.messages_layout = QVBoxLayout(self.messages_container)
-        self.messages_layout.setContentsMargins(30, 20, 30, 20)
-        self.messages_layout.setSpacing(15)
-        self.messages_layout.setAlignment(Qt.AlignTop)
+        # Placeholder for message labels
+        self.message_labels = []
         
-        # Empty state label
-        self.empty_label = QLabel("📭\n\nNo messages yet")
+        layout.addWidget(self.list_container)
+        layout.addStretch()
+        
+        # Detail view (hidden by default)
+        self.detail_container = QWidget()
+        self.detail_container.setStyleSheet("background: transparent;")
+        self.detail_container.hide()
+        detail_layout = QVBoxLayout(self.detail_container)
+        detail_layout.setContentsMargins(0, 0, 0, 0)
+        detail_layout.setSpacing(15)
+        
+        self.detail_time = QLabel()
+        self.detail_time.setFont(QFont("Courier New", 14))
+        self.detail_time.setStyleSheet("color: #808080; background: transparent;")
+        detail_layout.addWidget(self.detail_time)
+        
+        self.detail_title = QLabel()
+        self.detail_title.setFont(QFont("Courier New", 24, QFont.Bold))
+        self.detail_title.setStyleSheet("color: #E0E0E0; background: transparent;")
+        self.detail_title.setWordWrap(True)
+        detail_layout.addWidget(self.detail_title)
+        
+        self.detail_body = QLabel()
+        self.detail_body.setFont(QFont("Courier New", 16))
+        self.detail_body.setStyleSheet("color: #C0C0C0; background: transparent;")
+        self.detail_body.setWordWrap(True)
+        detail_layout.addWidget(self.detail_body)
+        
+        detail_layout.addStretch()
+        layout.addWidget(self.detail_container)
+        
+        # Hint at bottom
+        self.hint_label = QLabel("[TAP] View   [BACK] Menu")
+        self.hint_label.setFont(QFont("Courier New", 14))
+        self.hint_label.setStyleSheet("color: #606060; background: transparent;")
+        self.hint_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.hint_label)
+        
+        # Empty state
+        self.empty_label = QLabel("No messages")
+        self.empty_label.setFont(QFont("Courier New", 18))
+        self.empty_label.setStyleSheet("color: #606060; background: transparent;")
         self.empty_label.setAlignment(Qt.AlignCenter)
-        self.empty_label.setStyleSheet("""
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 24px;
-            padding: 100px;
-        """)
-        self.messages_layout.addWidget(self.empty_label)
-        
-        scroll.setWidget(self.messages_container)
-        layout.addWidget(scroll)
+        self.empty_label.hide()
+        self.list_layout.addWidget(self.empty_label)
     
     def _load_messages(self):
         """Load messages from file."""
-        # Clear existing messages
-        while self.messages_layout.count() > 0:
-            item = self.messages_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+        self.messages = []
         
-        messages = []
-        
-        if self.messages_file.exists():
-            try:
+        try:
+            if self.messages_file.exists():
                 with open(self.messages_file, 'r') as f:
                     data = json.load(f)
-                    messages = data.get('messages', [])
-            except Exception as e:
-                logger.error(f"Failed to load messages: {e}")
+                    self.messages = data if isinstance(data, list) else []
+        except Exception as e:
+            logger.error(f"Failed to load messages: {e}")
         
-        if not messages:
-            # Show empty state
-            self.empty_label = QLabel("📭\n\nNo messages yet")
-            self.empty_label.setAlignment(Qt.AlignCenter)
-            self.empty_label.setStyleSheet("""
-                color: rgba(255, 255, 255, 0.5);
-                font-size: 24px;
-                padding: 100px;
-            """)
-            self.messages_layout.addWidget(self.empty_label)
-        else:
-            # Show messages (newest first)
-            for msg in reversed(messages):
-                card = MessageCard(msg)
-                self.messages_layout.addWidget(card)
-            
-            self.messages_layout.addStretch()
+        self._update_display()
     
-    def _close(self):
-        """Close messages view."""
-        self.closed.emit()
-        if self.navigate:
-            self.navigate(AppState.VIEW_HOME)
+    def _update_display(self):
+        """Update the message list display."""
+        # Clear existing labels
+        for label in self.message_labels:
+            label.deleteLater()
+        self.message_labels = []
+        
+        if not self.messages:
+            self.empty_label.show()
+            return
+        
+        self.empty_label.hide()
+        
+        for i, msg in enumerate(self.messages[:15]):  # Show max 15
+            label = QLabel()
+            label.setFont(QFont("Courier New", 18))
+            label.setCursor(Qt.PointingHandCursor)
+            label.mousePressEvent = lambda e, idx=i: self._select_message(idx)
+            
+            # Format: "▶ HH:MM Title" or "  HH:MM Title"
+            timestamp = msg.get('timestamp', '')
+            try:
+                dt = datetime.fromisoformat(timestamp)
+                time_str = dt.strftime("%H:%M")
+            except:
+                time_str = "??:??"
+            
+            title = msg.get('title', msg.get('text', 'Message'))
+            if len(title) > 40:
+                title = title[:37] + "..."
+            
+            # Check if unread
+            is_unread = not msg.get('read', True)
+            
+            if i == self.selected_index:
+                text = f"▶ {time_str} {title}"
+                style = "color: #FFFFFF; background: transparent;"
+            else:
+                text = f"  {time_str} {title}"
+                if is_unread:
+                    style = "color: #90FF90; background: transparent;"  # Green for unread
+                else:
+                    style = "color: #808080; background: transparent;"
+            
+            label.setText(text)
+            label.setStyleSheet(style)
+            
+            self.message_labels.append(label)
+            self.list_layout.addWidget(label)
+    
+    def _select_message(self, index: int):
+        """Select and view a message."""
+        self.selected_index = index
+        self._update_display()
+        QTimer.singleShot(100, self._show_detail)
+    
+    def _show_detail(self):
+        """Show message detail view."""
+        if self.selected_index >= len(self.messages):
+            return
+        
+        msg = self.messages[self.selected_index]
+        self.current_message = msg
+        self.viewing_detail = True
+        
+        # Update detail labels
+        timestamp = msg.get('timestamp', '')
+        try:
+            dt = datetime.fromisoformat(timestamp)
+            time_str = dt.strftime("%a %d %b %Y at %H:%M")
+        except:
+            time_str = timestamp
+        
+        self.detail_time.setText(time_str)
+        self.detail_title.setText(msg.get('title', 'Message'))
+        self.detail_body.setText(msg.get('text', msg.get('body', '')))
+        
+        # Mark as read
+        msg['read'] = True
+        self._save_messages()
+        
+        # Switch to detail view
+        self.list_container.hide()
+        self.detail_container.show()
+        self.title_label.setText("MESSAGE")
+        self.hint_label.setText("[BACK] Return to list")
+        
+        self.update()
+    
+    def _show_list(self):
+        """Return to message list."""
+        self.viewing_detail = False
+        self.current_message = None
+        
+        self.detail_container.hide()
+        self.list_container.show()
+        self.title_label.setText("MESSAGES")
+        self.hint_label.setText("[TAP] View   [BACK] Menu")
+        
+        self._update_display()
+    
+    def _save_messages(self):
+        """Save messages to file."""
+        try:
+            self.messages_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.messages_file, 'w') as f:
+                json.dump(self.messages, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save messages: {e}")
+    
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handle keyboard navigation."""
+        key = event.key()
+        
+        if self.viewing_detail:
+            if key == Qt.Key_Escape or key == Qt.Key_Backspace:
+                self._show_list()
+            return
+        
+        if key == Qt.Key_Up:
+            if self.messages:
+                self.selected_index = (self.selected_index - 1) % len(self.messages)
+                self._update_display()
+        elif key == Qt.Key_Down:
+            if self.messages:
+                self.selected_index = (self.selected_index + 1) % len(self.messages)
+                self._update_display()
+        elif key in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space):
+            if self.messages:
+                self._show_detail()
+        elif key == Qt.Key_Escape:
+            self._go_back()
+        else:
+            super().keyPressEvent(event)
+    
+    def _go_back(self):
+        """Go back to menu."""
+        if self.viewing_detail:
+            self._show_list()
+        elif self.navigate:
+            self.navigate(AppState.VIEW_MENU)
+    
+    def mousePressEvent(self, event):
+        """Handle tap outside message items."""
+        # Check if clicked on a message label
+        for i, label in enumerate(self.message_labels):
+            if label.geometry().contains(event.pos()):
+                return  # Let the label handle it
+        
+        # Tap outside goes back
+        self._go_back()
     
     def on_activate(self):
         """Called when view becomes active."""
         logger.debug("Messages view activated")
+        self.selected_index = 0
+        self.viewing_detail = False
         self._load_messages()
+        self._show_list()
+        self.setFocus()
     
     def on_deactivate(self):
         """Called when view becomes inactive."""
