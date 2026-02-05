@@ -1,6 +1,6 @@
 """
 Home View - Retro Hardware Style
-Clock, photo slideshow, mic toggle, day/night indicator.
+40%-60% horizontal split: clock on left, photos on right.
 Pure black background, monospace text.
 """
 
@@ -9,6 +9,12 @@ from datetime import datetime
 from PyQt5.QtCore import Qt, QTimer, QRectF
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PyQt5.QtGui import QFont, QPainter, QPen, QBrush, QColor, QPixmap
+
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
 
 from models.app_state import AppState
 
@@ -23,31 +29,10 @@ class HomeView(QWidget):
     """
     Home screen - Retro Hardware Style.
     
-    Elements:
-    - Large digital clock (top-left)
-    - Mic icon (top-right) - toggle voice commands
-    - Photo slideshow in center
-    - Subtle hint: "Tap for Menu"
-    - Day/Night indicator (sun/moon)
+    Layout:
+    - 40% left: Sun/Moon (top-left), Clock (center)
+    - 60% right: Photos (loop every 10 min or on tap), Mic (top-right), Menu button (bottom-right)
     """
-    
-    # Orion constellation star positions (normalized 0-1)
-    ORION_STARS = [
-        # Belt
-        (0.45, 0.45, 2),
-        (0.50, 0.46, 2),
-        (0.55, 0.47, 2),
-        # Shoulders
-        (0.38, 0.30, 3),
-        (0.62, 0.32, 3),
-        # Feet
-        (0.35, 0.70, 2),
-        (0.60, 0.68, 3),
-        # Sword
-        (0.48, 0.52, 1),
-        (0.50, 0.56, 1),
-        (0.52, 0.60, 1),
-    ]
     
     def __init__(self, app_state: AppState, navigate_callback):
         super().__init__()
@@ -58,6 +43,9 @@ class HomeView(QWidget):
         self.mic_enabled = False
         self.current_photo = None
         self.photo_index = 0
+        self.transcription_text = ''
+        self.show_transcription = False
+        self.mic_toggled = None  # Callback for mic toggle
         
         self._init_ui()
         self._init_timers()
@@ -65,10 +53,6 @@ class HomeView(QWidget):
     def _init_ui(self):
         """Initialize UI - pure black background."""
         self.setStyleSheet("background-color: #000000;")
-        
-        # We'll paint most things in paintEvent for full control
-        # But use some labels for text
-        
         self.setFocusPolicy(Qt.StrongFocus)
     
     def _init_timers(self):
@@ -83,11 +67,10 @@ class HomeView(QWidget):
         self.daynight_timer.timeout.connect(self._check_day_night)
         self.daynight_timer.start(60000)  # Every minute
         
-        # Slideshow timer
+        # Slideshow timer - 10 minutes
         self.slideshow_timer = QTimer()
         self.slideshow_timer.timeout.connect(self._next_photo)
-        interval = self.app_state.get_setting('slideshow_interval', 5) * 1000
-        self.slideshow_timer.start(interval)
+        self.slideshow_timer.start(10 * 60 * 1000)  # 10 minutes
         
         # Repaint timer
         self.repaint_timer = QTimer()
@@ -108,114 +91,114 @@ class HomeView(QWidget):
         self.update()
     
     def _next_photo(self):
-        """Advance to next photo (image swap, no animation)."""
-        # Photo service will handle this
+        """Advance to next photo (instant swap, no animation)."""
+        # Increment photo index
+        if hasattr(self.app_state, 'next_photo'):
+            self.app_state.next_photo()
         self.update()
     
     def paintEvent(self, event):
-        """Paint the home screen."""
+        """Paint the home screen with 40%-60% split."""
         super().paintEvent(event)
         
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
         w, h = self.width(), self.height()
+        split_x = int(w * 0.4)  # 40% split line
         
-        # Draw background elements based on day/night
+        # LEFT SIDE (40%) - Clock area
+        # Draw sun/moon in top-left
         if self.is_day_mode:
-            self._draw_sun(painter)
+            self._draw_sun(painter, 60, 60)
         else:
-            self._draw_night_sky(painter)
-            self._draw_moon(painter)
+            self._draw_moon(painter, 60, 60)
         
-        # Draw clock (top-left)
-        self._draw_clock(painter)
+        # Draw clock in center-left
+        self._draw_clock(painter, split_x)
         
+        # RIGHT SIDE (60%) - Photo area
         # Draw mic icon (top-right)
-        self._draw_mic_icon(painter)
+        self._draw_mic_icon(painter, w)
         
-        # Draw photo area (center)
-        self._draw_photo_area(painter)
+        # Draw photo area (fills most of right side)
+        self._draw_photo_area(painter, split_x, w, h)
         
-        # Draw hint (bottom)
-        self._draw_hint(painter)
+        # Draw Menu button (bottom-right)
+        self._draw_menu_button(painter, w, h)
+        
+        # Draw transcription if active
+        if self.show_transcription and self.transcription_text:
+            self._draw_transcription(painter, w, h)
     
-    def _draw_sun(self, painter):
-        """Draw small yellow sun at top-left edge."""
+    def _draw_sun(self, painter, x, y):
+        """Draw larger yellow sun at specified position."""
         painter.setPen(Qt.NoPen)
         painter.setBrush(QBrush(QColor(255, 220, 80)))  # Yellow
         
-        # Sun position - top-left, partially off-screen
-        sun_x = 30
-        sun_y = 30
-        sun_r = 20
+        sun_r = 40  # Increased size
         
-        painter.drawEllipse(sun_x - sun_r, sun_y - sun_r, sun_r * 2, sun_r * 2)
+        painter.drawEllipse(x - sun_r, y - sun_r, sun_r * 2, sun_r * 2)
         
         # Simple rays
-        painter.setPen(QPen(QColor(255, 220, 80), 2))
+        painter.setPen(QPen(QColor(255, 220, 80), 3))
         for i in range(8):
             import math
             angle = i * 45 * math.pi / 180
-            x1 = sun_x + sun_r * 1.3 * math.cos(angle)
-            y1 = sun_y + sun_r * 1.3 * math.sin(angle)
-            x2 = sun_x + sun_r * 1.8 * math.cos(angle)
-            y2 = sun_y + sun_r * 1.8 * math.sin(angle)
+            x1 = x + sun_r * 1.3 * math.cos(angle)
+            y1 = y + sun_r * 1.3 * math.sin(angle)
+            x2 = x + sun_r * 1.8 * math.cos(angle)
+            y2 = y + sun_r * 1.8 * math.sin(angle)
             painter.drawLine(int(x1), int(y1), int(x2), int(y2))
     
-    def _draw_night_sky(self, painter):
-        """Draw Orion constellation faintly in background."""
-        painter.setPen(Qt.NoPen)
-        
-        w, h = self.width(), self.height()
-        
-        for star_x, star_y, size in self.ORION_STARS:
-            x = int(star_x * w)
-            y = int(star_y * h)
-            
-            # Subtle star color
-            opacity = 40 + size * 15  # 55-85 opacity
-            painter.setBrush(QBrush(QColor(200, 200, 220, opacity)))
-            painter.drawEllipse(x - size, y - size, size * 2, size * 2)
-    
-    def _draw_moon(self, painter):
-        """Draw crescent moon at top-left."""
-        moon_x = 35
-        moon_y = 35
-        moon_r = 18
+    def _draw_moon(self, painter, x, y):
+        """Draw larger crescent moon at specified position."""
+        moon_r = 38  # Increased size
         
         # Main moon circle
         painter.setPen(Qt.NoPen)
         painter.setBrush(QBrush(QColor(230, 230, 210)))  # Pale yellow
-        painter.drawEllipse(moon_x - moon_r, moon_y - moon_r, moon_r * 2, moon_r * 2)
+        painter.drawEllipse(x - moon_r, y - moon_r, moon_r * 2, moon_r * 2)
         
         # Dark overlay for crescent effect
         painter.setBrush(QBrush(QColor(0, 0, 0)))  # Black
-        painter.drawEllipse(moon_x - moon_r + 10, moon_y - moon_r - 2, 
-                          moon_r * 2 - 4, moon_r * 2)
+        painter.drawEllipse(x - moon_r + 20, y - moon_r - 4, 
+                          moon_r * 2 - 8, moon_r * 2)
     
-    def _draw_clock(self, painter):
-        """Draw large digital clock."""
+    def _draw_clock(self, painter, split_x):
+        """Draw large digital clock in left area."""
         now = datetime.now()
         time_str = now.strftime("%H:%M")
         date_str = now.strftime("%a %d %b")
         
+        # Center in left area
+        clock_x = split_x // 2
+        clock_y = self.height() // 2
+        
         # Time - large monospace
         painter.setPen(QColor(240, 240, 230))  # Off-white
-        font = QFont("Courier New", 72, QFont.Bold)
+        font = QFont("Courier New", 64, QFont.Bold)
         painter.setFont(font)
-        painter.drawText(80, 120, time_str)
         
-        # Date - smaller
-        font = QFont("Courier New", 20)
+        # Get text bounds for centering
+        metrics = painter.fontMetrics()
+        time_width = metrics.horizontalAdvance(time_str)
+        time_height = metrics.height()
+        
+        painter.drawText(clock_x - time_width // 2, clock_y - 20, time_str)
+        
+        # Date - smaller, centered below
+        font = QFont("Courier New", 18)
         painter.setFont(font)
         painter.setPen(QColor(160, 160, 150))  # Dimmer
-        painter.drawText(80, 160, date_str)
+        
+        metrics = painter.fontMetrics()
+        date_width = metrics.horizontalAdvance(date_str)
+        painter.drawText(clock_x - date_width // 2, clock_y + 30, date_str)
     
-    def _draw_mic_icon(self, painter):
+    def _draw_mic_icon(self, painter, w):
         """Draw mic icon at top-right."""
-        w = self.width()
-        mic_x = w - 60
+        mic_x = w - 50
         mic_y = 40
         
         # Mic color based on state
@@ -236,20 +219,16 @@ class HomeView(QWidget):
         # Store mic rect for click detection
         self._mic_rect = QRectF(mic_x - 20, mic_y - 25, 40, 55)
     
-    def _draw_photo_area(self, painter):
-        """Draw photo slideshow area in center."""
-        w, h = self.width(), self.height()
+    def _draw_photo_area(self, painter, split_x, w, h):
+        """Draw photo area on right side (60%)."""
+        # Photo area fills most of right side
+        padding = 30
+        photo_x = split_x + padding
+        photo_y = padding + 60  # Below mic
+        photo_w = w - split_x - padding * 2
+        photo_h = h - padding * 2 - 60 - 60  # Leave space for mic and menu button
         
-        # Photo area dimensions
-        photo_w = 500
-        photo_h = 350
-        photo_x = (w - photo_w) // 2
-        photo_y = (h - photo_h) // 2 + 20
-        
-        # Border
-        painter.setPen(QPen(QColor(80, 80, 80), 2))
-        painter.setBrush(QBrush(QColor(20, 20, 20)))
-        painter.drawRect(photo_x, photo_y, photo_w, photo_h)
+        # No border - photos display directly
         
         # Try to draw current photo
         photo_path = self.app_state.get_current_photo_path() if hasattr(self.app_state, 'get_current_photo_path') else None
@@ -258,18 +237,21 @@ class HomeView(QWidget):
             try:
                 pixmap = QPixmap(photo_path)
                 if not pixmap.isNull():
-                    scaled = pixmap.scaled(photo_w - 4, photo_h - 4, 
+                    scaled = pixmap.scaled(photo_w, photo_h, 
                                           Qt.KeepAspectRatio, Qt.SmoothTransformation)
                     px = photo_x + (photo_w - scaled.width()) // 2
                     py = photo_y + (photo_h - scaled.height()) // 2
                     painter.drawPixmap(px, py, scaled)
+                    
+                    # Store photo rect for click detection
+                    self._photo_rect = QRectF(photo_x, photo_y, photo_w, photo_h)
                     return
             except:
                 pass
         
         # Placeholder if no photo
         painter.setPen(QColor(60, 60, 60))
-        font = QFont("Courier New", 24)
+        font = QFont("Courier New", 20)
         painter.setFont(font)
         painter.drawText(photo_x, photo_y, photo_w, photo_h, 
                         Qt.AlignCenter, "[ PHOTOS ]")
@@ -277,33 +259,109 @@ class HomeView(QWidget):
         # Store photo rect for click detection
         self._photo_rect = QRectF(photo_x, photo_y, photo_w, photo_h)
     
-    def _draw_hint(self, painter):
-        """Draw subtle hint at bottom."""
-        w, h = self.width(), self.height()
+    def _draw_menu_button(self, painter, w, h):
+        """Draw Menu button at bottom-right."""
+        btn_w = 120
+        btn_h = 50
+        btn_x = w - btn_w - 30
+        btn_y = h - btn_h - 30
         
-        painter.setPen(QColor(80, 80, 80))  # Very subtle
+        # Button background
+        painter.setPen(QPen(QColor(100, 100, 100), 2))
+        painter.setBrush(QBrush(QColor(30, 30, 30)))
+        painter.drawRect(btn_x, btn_y, btn_w, btn_h)
+        
+        # Button text
+        painter.setPen(QColor(200, 200, 200))
+        font = QFont("Courier New", 18, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(btn_x, btn_y, btn_w, btn_h, Qt.AlignCenter, "MENU")
+        
+        # Store button rect for click detection
+        self._menu_rect = QRectF(btn_x, btn_y, btn_w, btn_h)
+    
+    def _draw_transcription(self, painter, w, h):
+        """Draw transcription text overlay."""
+        # Semi-transparent overlay
+        painter.fillRect(0, h - 150, w, 150, QColor(0, 0, 0, 200))
+        
+        # Transcription text
+        painter.setPen(QColor(100, 255, 100))  # Green like active mic
+        font = QFont("Courier New", 16, QFont.Bold)
+        painter.setFont(font)
+        
+        # Draw label
+        painter.drawText(20, h - 120, "LISTENING:")
+        
+        # Draw transcribed text
+        painter.setPen(QColor(200, 200, 200))
         font = QFont("Courier New", 14)
         painter.setFont(font)
-        painter.drawText(0, h - 40, w, 30, Qt.AlignCenter, "Tap for Menu")
+        painter.drawText(20, h - 90, w - 40, 80, 
+                        Qt.AlignLeft | Qt.TextWordWrap, 
+                        self.transcription_text)
     
     def mousePressEvent(self, event):
-        """Handle tap - go to menu."""
+        """Handle tap events."""
         pos = event.pos()
         
         # Check if mic icon tapped
         if hasattr(self, '_mic_rect') and self._mic_rect.contains(pos.x(), pos.y()):
             self.mic_enabled = not self.mic_enabled
             logger.info(f"Mic toggled: {self.mic_enabled}")
+            
+            # Speak "I'm Listening" when activated
+            if self.mic_enabled:
+                self._speak("I'm listening")
+            
+            # Notify main window to start/stop voice service
+            if self.mic_toggled:
+                self.mic_toggled(self.mic_enabled)
+            
             self.update()
             return
         
-        # Check if photo area tapped
-        if hasattr(self, '_photo_rect') and self._photo_rect.contains(pos.x(), pos.y()):
-            self.navigate(AppState.VIEW_PHOTOS)
+        # Check if Menu button tapped
+        if hasattr(self, '_menu_rect') and self._menu_rect.contains(pos.x(), pos.y()):
+            self.navigate(AppState.VIEW_MENU)
             return
         
-        # Any other tap goes to menu
-        self.navigate(AppState.VIEW_MENU)
+        # Check if photo area tapped - advance to next photo
+        if hasattr(self, '_photo_rect') and self._photo_rect.contains(pos.x(), pos.y()):
+            self._next_photo()
+            return
+    
+    def _speak(self, text: str):
+        """Speak text using TTS."""
+        if not TTS_AVAILABLE:
+            logger.warning(f"TTS not available, would say: {text}")
+            return
+        
+        try:
+            engine = pyttsx3.init()
+            engine.setProperty('rate', 150)
+            engine.setProperty('volume', 0.9)
+            engine.say(text)
+            engine.runAndWait()
+        except Exception as e:
+            logger.error(f"TTS error: {e}")
+    
+    def set_mic_active(self, active: bool):
+        """Set mic active state (called by voice service)."""
+        self.mic_enabled = active
+        self.update()
+    
+    def show_transcription(self, text: str):
+        """Display transcription text."""
+        self.transcription_text = text
+        self.show_transcription = True
+        self.update()
+    
+    def clear_transcription(self):
+        """Clear transcription text."""
+        self.transcription_text = ''
+        self.show_transcription = False
+        self.update()
     
     def keyPressEvent(self, event):
         """Handle key press."""
