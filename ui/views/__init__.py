@@ -22,5 +22,3 @@ __all__ = [
     'MessagesView',
     'GamesView',
 ]
-    'GamesView',
-]
