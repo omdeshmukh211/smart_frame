@@ -27,6 +27,7 @@ from PyQt5.QtCore import Qt
 # Application imports
 from models.app_state import AppState
 from ui.main_window import MainWindow
+from config.settings_loader import load_settings
 
 
 def setup_logging(debug=False):
@@ -79,8 +80,9 @@ def main():
     if args.fullscreen:
         logger.info("Fullscreen mode enabled")
     
-    # Create application state
-    app_state = AppState()
+    # Load settings and create application state
+    settings = load_settings()
+    app_state = AppState(settings)
     
     # Create and show main window
     window = MainWindow(app_state, fullscreen=args.fullscreen)
