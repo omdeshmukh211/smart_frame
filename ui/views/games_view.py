@@ -5,10 +5,13 @@ Text-based game list with arrow selection.
 
 import logging
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QStackedWidget
 from PyQt5.QtGui import QFont, QKeyEvent
 
 from models.app_state import AppState
+from ui.games.snake_game import SnakeGameWidget
+from ui.games.tictactoe_game import TicTacToeWidget
+from ui.games.wordle_game import WordleWidget
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,9 @@ class GamesView(QWidget):
         self.selected_index = 0
         self.current_game = None
         
+        # Game widgets
+        self.game_widgets = {}
+        
         self._init_ui()
         self.setFocusPolicy(Qt.StrongFocus)
     
@@ -51,7 +57,40 @@ class GamesView(QWidget):
         # Pure black background
         self.setStyleSheet("background-color: #000000;")
         
+        # Main stacked widget (list view + game views)
+        self.stack = QStackedWidget(self)
+        self.stack.setStyleSheet("background-color: #000000;")
+        
+        # Create list view
+        self.list_view = self._create_list_view()
+        self.stack.addWidget(self.list_view)
+        
+        # Create game widgets
+        self.game_widgets['snake'] = SnakeGameWidget(self)
+        self.game_widgets['snake'].game_over.connect(self._on_game_over)
+        self.stack.addWidget(self.game_widgets['snake'])
+        
+        self.game_widgets['tictactoe'] = TicTacToeWidget(self)
+        self.game_widgets['tictactoe'].game_over.connect(self._on_game_over)
+        self.stack.addWidget(self.game_widgets['tictactoe'])
+        
+        self.game_widgets['wordle'] = WordleWidget(self)
+        self.game_widgets['wordle'].game_over.connect(self._on_game_over)
+        self.stack.addWidget(self.game_widgets['wordle'])
+        
+        # Layout
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.stack)
+        
+        self.stack.setCurrentWidget(self.list_view)
+    
+    def _create_list_view(self):
+        """Create the game list view."""
+        widget = QWidget()
+        widget.setStyleSheet("background-color: #000000;")
+        
+        layout = QVBoxLayout(widget)
         layout.setContentsMargins(60, 60, 60, 60)
         layout.setSpacing(0)
         
@@ -88,6 +127,8 @@ class GamesView(QWidget):
         layout.addWidget(self.hint_label)
         
         self._update_display()
+        
+        return widget
     
     def _update_display(self):
         """Update display with selection indicator."""
@@ -111,18 +152,42 @@ class GamesView(QWidget):
         logger.info(f"Launching game: {game_id}")
         self.current_game = game_id
         
-        # TODO: Implement actual game screens
-        # For now, show game placeholder
-        self._show_game_placeholder(game_id)
+        # Switch to game widget
+        game_widget = self.game_widgets[game_id]
+        self.stack.setCurrentWidget(game_widget)
+        
+        # Activate game
+        if hasattr(game_widget, 'on_activate'):
+            game_widget.on_activate()
+        
+        game_widget.setFocus()
+    
+    def _on_game_over(self, *args):
+        """Handle game over event."""
+        logger.info(f"Game over: {args}")
+        # Game will handle showing results
+        # User can press R to restart or Back to exit
     
     def _show_game_placeholder(self, game_id: str):
         """Show placeholder for game (games would be separate full-screen widgets)."""
-        # In a full implementation, this would switch to the actual game widget
-        # For now we just log it
-        logger.info(f"Game {game_id} would launch here")
+        # Deprecated - now using actual game widgets
+        pass
     
     def keyPressEvent(self, event: QKeyEvent):
         """Handle keyboard navigation."""
+        # If we're in a game, pass events to the game widget
+        if self.current_game:
+            game_widget = self.game_widgets[self.current_game]
+            
+            # Back key exits game
+            if event.key() == Qt.Key_Escape:
+                self._go_back()
+            else:
+                # Pass to game widget
+                game_widget.keyPressEvent(event)
+            return
+        
+        # Otherwise handle list navigation
         key = event.key()
         
         if key == Qt.Key_Up:
@@ -142,25 +207,43 @@ class GamesView(QWidget):
         """Go back to menu."""
         if self.current_game:
             # Exit game, return to games list
+            game_widget = self.game_widgets[self.current_game]
+            if hasattr(game_widget, 'on_deactivate'):
+                game_widget.on_deactivate()
+            
             self.current_game = None
+            self.stack.setCurrentWidget(self.list_view)
             self._update_display()
         elif self.navigate:
             self.navigate(AppState.VIEW_MENU)
     
     def mousePressEvent(self, event):
-        """Handle tap outside game items - go back."""
-        if not any(label.geometry().contains(event.pos()) for label in self.game_labels):
-            self._go_back()
+        """Handle tap events."""
+        # If in a game, pass to game widget
+        if self.current_game:
+            game_widget = self.game_widgets[self.current_game]
+            game_widget.mousePressEvent(event)
+        else:
+            # Handle tap outside game items - go back
+            if not any(label.geometry().contains(event.pos()) for label in self.game_labels):
+                self._go_back()
     
     def on_activate(self):
         """Called when view becomes active."""
         logger.debug("Games view activated")
         self.selected_index = 0
         self.current_game = None
+        self.stack.setCurrentWidget(self.list_view)
         self._update_display()
         self.setFocus()
     
     def on_deactivate(self):
         """Called when view becomes inactive."""
         logger.debug("Games view deactivated")
-        self.current_game = None
+        
+        # Deactivate any active game
+        if self.current_game:
+            game_widget = self.game_widgets[self.current_game]
+            if hasattr(game_widget, 'on_deactivate'):
+                game_widget.on_deactivate()
+            self.current_game = None

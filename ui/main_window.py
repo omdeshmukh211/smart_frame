@@ -21,6 +21,7 @@ from ui.views.games_view import GamesView
 from ui.widgets.message_overlay import MessageOverlay
 from services.photo_service import PhotoService
 from services.music_service import MusicService
+from services.voice_service import VoiceService
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,7 @@ class MainWindow(QMainWindow):
         # Background services
         self.photo_service = PhotoService(app_state)
         self.music_service = MusicService(app_state)
+        self.voice_service = None  # Will be initialized after views
 
         self._init_ui()
 
@@ -115,6 +117,15 @@ class MainWindow(QMainWindow):
         # Message overlay (always on top)
         self.message_overlay = MessageOverlay(central)
         self.message_overlay.dismissed.connect(self._on_overlay_dismissed)
+
+        # Initialize voice service after views are created
+        self.voice_service = VoiceService(self.app_state, self._navigate)
+        self.voice_service.wake_detected.connect(self._on_wake_detected)
+        self.voice_service.transcription_ready.connect(self._on_transcription)
+        self.voice_service.command_executed.connect(self._on_command_executed)
+        
+        # Connect voice service to home view for mic control
+        self.home_view.mic_toggled = self._on_mic_toggled
 
         self._navigate(AppState.VIEW_IDLE)
         self._setup_shortcuts()
@@ -183,6 +194,35 @@ class MainWindow(QMainWindow):
     def _on_overlay_dismissed(self):
         """Called when message overlay is dismissed."""
         logger.info("Message overlay dismissed, resuming normal operation")
+    
+    def _on_wake_detected(self):
+        """Called when wake phrase is detected."""
+        logger.info("Wake phrase detected")
+        # Update home view to show mic is active
+        if hasattr(self.home_view, 'set_mic_active'):
+            self.home_view.set_mic_active(True)
+    
+    def _on_transcription(self, text: str):
+        """Called when speech is transcribed."""
+        logger.info(f"Transcription: {text}")
+        # Show transcription on home view
+        if hasattr(self.home_view, 'show_transcription'):
+            self.home_view.show_transcription(text)
+    
+    def _on_command_executed(self, command: str, success: bool):
+        """Called when a command is executed."""
+        logger.info(f"Command executed: {command} (success={success})")
+        # Clear transcription after command
+        if hasattr(self.home_view, 'clear_transcription'):
+            QTimer.singleShot(2000, self.home_view.clear_transcription)
+    
+    def _on_mic_toggled(self, enabled: bool):
+        """Called when mic is toggled from home view."""
+        logger.info(f"Mic toggled: {enabled}")
+        if enabled:
+            self.voice_service.start_listening()
+        else:
+            self.voice_service.stop_listening()
 
     def eventFilter(self, obj, event):
         # If overlay is visible, capture all input

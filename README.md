@@ -1,379 +1,403 @@
 # Smart Frame
 
-A smart display system with voice control, dynamic clock display, and music playback capabilities. Features day/night mode with animated sun/moon icons and a beautiful visual experience.
+A retro hardware-style smart display built with **PyQt5**. Features voice control, photo slideshow, music player, games, and message system - all with a nostalgic monospace aesthetic.
 
 ---
 
-## 🆕 New Features
+## ✨ Features
 
-### 📩 Message System
-- Send messages to the frame via the API or UI.
-- Messages are displayed on the screen and can be managed from the backend.
-- Message history is stored in `data/messages.txt`.
+### 🎮 Retro Hardware UI
+- Pure black backgrounds with monospace Courier New fonts
+- Discrete state changes (no animations)
+- 40%-60% split home screen (clock left, photos right)
+- Fixed 1024x600 resolution optimized for Raspberry Pi displays
 
-### 🎵 YouTube Music Integration
-- Press the **Music** button or use a voice command to open YouTube Music in Chromium.
-- If Chromium is already open on YouTube Music, it will not open a new window (idempotent behavior).
-- Voice commands like "play coldplay" will search and auto-play the top result on YouTube Music.
-- Chromium opens in full-screen (kiosk) mode and is brought to the foreground.
+### 📸 Photo Slideshow
+- Edge-to-edge photo display
+- 10-minute auto-advance or tap to change
+- Scans local photo directory automatically
+- Smooth QPixmap rendering
 
-### 🗣️ Voice Command Pipeline
-- **Wake phrase gated:** Only processes speech that starts with a configurable wake phrase (see `config/voice_triggers.json`).
-- **Configurable commands:** All voice commands and their actions are mapped in `config/voice_commands.json`.
-- **Offline speech-to-text:** Uses Vosk for local, offline speech recognition (no cloud required).
-- **Pipeline:**
-   1. Capture speech from microphone
-   2. Convert to text (STT)
-   3. Normalize and check for wake phrase
-   4. Parse command and execute mapped action
-   5. Optional spoken feedback (TTS stub included)
-- **Safe and robust:** Ignores speech without wake phrase, never executes partial/unsafe commands, and runs all actions in background threads.
-- **Easy to extend:** Add new wake phrases or commands by editing the JSON config files—no code changes needed.
+### 🎵 Music Player
+- Headless YouTube Music via mpv (no browser required)
+- Transport controls (play, pause, skip)
+- Volume visualization bars
+- Dancing bars visualizer
 
-#### Example Wake Phrase Config (`config/voice_triggers.json`):
-```json
-{
-   "wake_phrases": [
-      "hey om",
-      "hello om"
-   ]
-}
-```
+### 🎮 Built-in Games
+- **Snake** - Classic grid-based game (20x20 grid)
+- **Tic-Tac-Toe** - AI opponent with minimax strategy
+- **Wordle** - Daily word puzzle with on-screen keyboard
+- All games use native PyQt5 rendering with QPainter
 
-#### Example Command Map (`config/voice_commands.json`):
-```json
-{
-   "play music": "open_youtube_music",
-   "play coldplay": "play_youtube_music_search",
-   "show messages": "open_message_library",
-   "what time is it": "speak_time",
-   "go to sleep": "enter_idle",
-   "play snake": "launch_snake_game"
-}
-```
+### 🗣️ Voice Control
+- Wake phrase detection ("hey om", "hello om")
+- 30+ voice commands for navigation and control
+- On-screen transcription display
+- Text-to-speech feedback ("I'm listening")
+- Completely offline using speech_recognition + pyttsx3
 
-#### Example Voice Usage
-- "Hey Om, play music"
-- "Hello Om, play Coldplay"
-- "Hey Om, what time is it?"
-- "Hey Om, show messages"
+### 💬 Message System
+- Scheduled messages with priority levels
+- Full-screen blocking overlays
+- Message history tracking
+- Sound notification support
 
-#### Voice Pipeline Files
-- `voice/voice_listener.py` — Main pipeline (STT, wake phrase, command parsing, action dispatch)
-- `voice/command_parser.py` — Command matching logic
-- `voice/actions.py` — Action implementations (background execution, TTS feedback)
-- `voice/responses.py` — Simple TTS stub
-- `backend/music_controller.py` — Chromium/YouTube Music open/search/autoplay logic
+### 🌙 Day/Night Mode
+- Automatic sun/moon icons (6am-6pm day mode)
+- Larger icons (40px radius) in top-left
+- Subtle visual adaptation
 
-#### Requirements
-- Add to `requirements.txt`:
-   - `vosk`
-   - `pyaudio`
-   - (optional) `pyttsx3` for TTS
+---
 
-#### To Run Voice Listener
+## 📦 Installation
+
+### Prerequisites
+- Raspberry Pi (tested on Pi 4) or Linux system
+- Python 3.8+
+- Display (1024x600 recommended)
+
+### Quick Install
+
 ```bash
-cd voice
-python3 voice_listener.py
+cd smart_frame
+chmod +x install.sh
+./install.sh
+```
+
+This will install:
+- System dependencies (PyQt5, multimedia packages)
+- Python packages (see requirements.txt)
+- mpv for music playback
+- Optional: TTS and speech recognition libraries
+
+### Manual Installation
+
+```bash
+# Install system packages
+sudo apt-get update
+sudo apt-get install -y python3-pyqt5 python3-pyqt5.qtmultimedia \
+    mpv ffmpeg python3-pip
+
+# Install Python packages
+pip3 install -r requirements.txt
+
+# Optional: Voice control dependencies
+pip3 install SpeechRecognition pyttsx3 pyaudio
 ```
 
 ---
 
-## 📁 Project Structure
+## 🚀 Usage
+
+### Start the Application
+
+```bash
+# Standard mode (windowed)
+python3 main.py
+
+# Fullscreen mode
+python3 main.py --fullscreen
+
+# Run via start script
+chmod +x start.sh
+./start.sh
+```
+
+### Systemd Service (Auto-start on boot)
+
+```bash
+# Copy service file
+sudo cp services/smart_frame_native.service /etc/systemd/system/
+
+# Enable and start
+sudo systemctl enable smart_frame_native
+sudo systemctl start smart_frame_native
+
+# Check status
+sudo systemctl status smart_frame_native
+```
+
+---
+
+## 🎯 Navigation
+
+### Screen Flow
+```
+IDLE (robot face) 
+  ↓ tap
+HOME (clock + photos)
+  ↓ tap Menu button
+MENU
+  ↓ select option
+├── Games (Snake, Tic-Tac-Toe, Wordle)
+├── Music (YouTube Music player)
+├── Messages (Message history)
+└── Settings (Volume, brightness, WiFi)
+```
+
+### Controls
+- **Tap** - Navigate forward
+- **Escape/Back** - Navigate backward
+- **Mic button** - Toggle voice control
+- **Menu button** - Access main menu (bottom-right on home screen)
+
+---
+
+## 🗣️ Voice Commands
+
+### Activation
+1. Tap mic icon (top-right on home screen) - turns green
+2. Say wake phrase: **"hey om"** or **"hello om"**
+3. System responds: "I'm listening"
+4. Speak your command
+5. Transcription appears at bottom of screen
+6. Command executes with voice feedback
+
+### Available Commands
+
+**Navigation:**
+- "open games" / "show games"
+- "play music" / "open music"
+- "show messages" / "check messages"
+- "open settings"
+- "go home"
+- "go to sleep"
+
+**Games:**
+- "play snake" / "open snake"
+- "play tic tac toe" / "play x o"
+- "play wordle" / "open wordle"
+
+**Utilities:**
+- "what time is it" / "tell me the time"
+- "stop music" / "pause music"
+
+---
+
+## ⚙️ Configuration
+
+### Settings File: `config/settings.yaml`
+
+```yaml
+# Photo slideshow
+photo_directory: "/home/pi/Pictures"
+slideshow_interval: 600  # 10 minutes in seconds
+
+# Music
+music_volume: 75
+music_backend: "mpv"  # Uses mpv for headless playback
+
+# Display
+fullscreen: true
+resolution:
+  width: 1024
+  height: 600
+
+# Voice
+voice_enabled: true
+wake_phrases:
+  - "hey om"
+  - "hello om"
+```
+
+### Voice Commands: `config/voice_commands.json`
+
+Add or modify voice commands by editing the JSON mappings:
+
+```json
+{
+  "your custom phrase": "action_name",
+  "play my playlist": "open_music"
+}
+```
+
+---
+
+## 📂 Project Structure
 
 ```
 smart_frame/
+├── main.py                     # Application entry point
+├── install.sh                  # Installation script
+├── start.sh                    # Launch script
+├── requirements.txt            # Python dependencies
 │
-├── app.py                    # Main Flask server
+├── backend/                    # Backend services
+│   ├── music_controller.py     # Music playback control
+│   ├── photo_manager.py        # Photo directory scanner
+│   ├── message_manager.py      # Message handling
+│   └── system_controls.py      # System utilities
 │
-├── config/
-│   ├── settings.yaml         # Configuration settings
-│   └── constants.py          # State constants
+├── ui/                         # PyQt5 User Interface
+│   ├── main_window.py          # Main window & navigation
+│   ├── views/                  # Screen views
+│   │   ├── idle_view.py        # Robot face idle screen
+│   │   ├── home_view.py        # Clock + photos home screen
+│   │   ├── menu_view.py        # Text menu navigation
+│   │   ├── games_view.py       # Games launcher
+│   │   ├── music_view.py       # Music player UI
+│   │   ├── messages_view.py    # Message list/detail
+│   │   └── settings_view.py    # Settings UI
+│   ├── games/                  # Native game widgets
+│   │   ├── snake_game.py       # Snake game
+│   │   ├── tictactoe_game.py   # Tic-Tac-Toe game
+│   │   └── wordle_game.py      # Wordle game
+│   └── widgets/
+│       └── message_overlay.py  # Full-screen message display
 │
-├── backend/
-│   ├── state_manager.py      # System state management
-│   ├── message_manager.py    # Message handling and storage
-│   ├── music_controller.py   # Music playback control
-│   └── system_controls.py    # Volume, brightness & Bluetooth control
+├── services/                   # Background services
+│   ├── photo_service.py        # Photo slideshow service
+│   ├── music_service.py        # Music player service
+│   └── voice_service.py        # Voice recognition service
 │
-├── voice/
-│   ├── voice_listener.py     # Speech recognition
-│   ├── command_parser.py     # Intent parsing
-│   ├── actions.py            # Intent execution
-│   └── responses.py          # Voice response templates
+├── models/                     # Data models
+│   └── app_state.py           # Application state manager
 │
-├── ui/
-│   ├── index.html            # Main UI page
-│   ├── app.js                # Frontend JavaScript
-│   ├── style.css             # Styles with day/night themes
-│   └── assets/               # Static assets
-│       ├── idle/
-│       ├── clock/
-│       └── icons/
+├── config/                     # Configuration
+│   ├── settings.yaml          # App settings
+│   ├── settings_loader.py     # Config loader
+│   ├── voice_commands.json    # Voice command mappings
+│   └── voice_triggers.json    # Wake phrases
 │
-├── scripts/
-│   ├── start_music.sh        # Launch YouTube Music
-│   ├── stop_music.sh         # Stop music playback
-│   └── set_volume.sh         # Set system volume
+├── voice/                      # Voice processing
+│   ├── command_parser.py      # Command parsing utilities
+│   ├── actions.py             # Action handlers
+│   └── responses.py           # TTS responses
 │
-├── data/
-│   ├── messages.txt          # Message history
-│   └── logs.txt              # Application logs
+├── data/                       # Runtime data
+│   ├── logs.txt               # Application logs
+│   └── messages.txt           # Message storage
 │
-├── services/
-│   ├── app.service           # systemd service for Flask
-│   └── voice.service         # systemd service for voice
+├── messages/                   # Message system data
+│   ├── message_history.json   # Message history
+│   └── scheduled_messages.json # Scheduled messages
 │
-└── README.md                 # This file
+├── photos/                     # Photo storage directory
+├── scripts/                    # System scripts
+└── services/
+    └── smart_frame_native.service  # Systemd service
 ```
 
-## 🖼️ Clock UI Features
+---
 
-### Day/Night Mode
+## 🎨 Design Philosophy
 
-The clock screen automatically switches between day and night modes based on time:
+### Retro Hardware Aesthetic
+- **Monospace fonts only** (Courier New throughout)
+- **Pure black backgrounds** (#000000)
+- **Minimal color palette** (off-white, soft green, grays)
+- **No gradients, shadows, or rounded corners**
+- **Discrete state changes** - instant swaps, no animations
+- **Text-based interfaces** - arrow selection, minimal graphics
 
-#### ☀️ Day Mode (6 AM - 6 PM)
-- **Animated Sun**: Large sun icon with rotating rays and pulsing glow
-- **Warm Background**: Golden yellow gradient creating a sunny atmosphere
-- **Light UI**: Dark text on warm background
+### Performance
+- **Native widgets** - No web rendering overhead
+- **Efficient rendering** - QPainter for custom graphics
+- **Low memory footprint** - Optimized for Raspberry Pi
+- **Headless services** - mpv for music (no browser)
 
-#### 🌙 Night Mode (6 PM - 6 AM)
-- **Moon Icon**: Crescent moon with craters and soft glow
-- **Starry Background**: Deep space gradient with twinkling stars
-- **Dark UI**: White text and borders for contrast
+---
 
-### Clock Layout
+## 🛠️ Development
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  ☀️/🌙                                                   │
-│  (sun/moon)         ┌─────────────────────┐             │
-│                     │    Photo Frame      │             │
-│   9:30              │       Loop          │             │
-│                     └─────────────────────┘             │
-│   Sat 29 Jan 2026                                       │
-│                      (Music) (Search) (Sleep) (Settings)│
-└─────────────────────────────────────────────────────────┘
-```
-
-### Action Buttons
-
-| Button | Function |
-|--------|----------|
-| **Music** | Opens YouTube Music for playback |
-| **Search** | Opens web search (Google) |
-| **Sleep** | Returns to idle state |
-| **Settings** | Opens settings panel |
-
-### Settings Panel
-
-- **Bluetooth**: Toggle on/off
-- **Brightness**: Slider (0-100%)
-- **Volume**: Slider (0-100%)
-
-### Photo Frame (Placeholder)
-
-Reserved area for future photo slideshow functionality.
-
-## 🏗️ Architecture
-
-### System States
-
-The system operates in three states:
-
-- **IDLE**: Default state showing idle animation with pulsing circle
-- **CLOCK**: Shows clock display with day/night theme (auto-returns to IDLE after 120s)
-- **MUSIC**: Music playback mode (no auto-timeout)
-
-### Components
-
-1. **Flask Backend (`app.py`)**: Central server managing state and exposing REST APIs
-2. **Voice Module**: Separate process for speech recognition and command execution
-3. **Frontend UI**: Single-page app that polls backend for state updates
-
-### API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/state` | GET | Get current system state |
-| `/tap` | POST | Handle screen tap (toggle IDLE/CLOCK) |
-| `/message` | POST | Set a new message |
-| `/message/active` | GET | Get active message |
-| `/music/play` | POST | Start music playback |
-| `/music/stop` | POST | Stop music playback |
-| `/volume` | POST | Set system volume |
-| `/brightness` | POST | Set display brightness |
-| `/bluetooth` | POST | Toggle Bluetooth on/off |
-
-## 🚀 Manual Setup
-
-### Prerequisites
-
-- Python 3.7+
-- pip
-- Chromium browser (for music playback)
-- Audio system (ALSA/PulseAudio/PipeWire)
-
-### Installation
-
-1. **Clone or copy the project**:
-   ```bash
-   cd /home/pi
-   cp -r smart_frame /home/pi/smart_frame
-   ```
-
-2. **Install Python dependencies**:
-   ```bash
-   cd smart_frame
-   pip3 install flask pyyaml
-   ```
-
-3. **Install voice dependencies** (optional):
-   ```bash
-   pip3 install SpeechRecognition pyaudio pyttsx3
-   sudo apt-get install portaudio19-dev
-   ```
-
-4. **Make scripts executable**:
-   ```bash
-   chmod +x scripts/*.sh
-   ```
-
-### Running Manually
-
-1. **Start the Flask server**:
-   ```bash
-   python3 app.py
-   ```
-   The server will be available at `http://localhost:5000`
-
-2. **Start the voice listener** (in a separate terminal):
-   ```bash
-   cd voice
-   python3 voice_listener.py
-   ```
-
-## ⚙️ systemd Services
-
-### Enable Services
-
-1. **Copy service files**:
-   ```bash
-   sudo cp services/app.service /etc/systemd/system/
-   sudo cp services/voice.service /etc/systemd/system/
-   ```
-
-2. **Update paths** (if not using `/home/pi`):
-   ```bash
-   sudo nano /etc/systemd/system/app.service
-   sudo nano /etc/systemd/system/voice.service
-   ```
-
-3. **Reload systemd**:
-   ```bash
-   sudo systemctl daemon-reload
-   ```
-
-4. **Enable and start services**:
-   ```bash
-   sudo systemctl enable app.service
-   sudo systemctl enable voice.service
-   sudo systemctl start app.service
-   sudo systemctl start voice.service
-   ```
-
-### Service Management
+### Running in Development Mode
 
 ```bash
-# Check status
-sudo systemctl status app.service
-sudo systemctl status voice.service
+# Windowed mode for testing
+python3 main.py
 
-# View logs
-sudo journalctl -u app.service -f
-sudo journalctl -u voice.service -f
-
-# Restart services
-sudo systemctl restart app.service
-sudo systemctl restart voice.service
-
-# Stop services
-sudo systemctl stop app.service
-sudo systemctl stop voice.service
+# With debug logging
+python3 main.py --debug
 ```
 
-## 🎤 Voice Commands
+### Adding New Voice Commands
 
-| Command | Action |
-|---------|--------|
-| "Hey smart frame" | Wake/greeting |
-| "What time is it" | Speak current time |
-| "Show clock" | Display clock |
-| "Play [artist]" | Play music |
-| "Stop music" | Stop playback |
-| "Volume [0-100]" | Set volume |
-| "Brightness [0-100]" | Set brightness |
-
-## 🔧 Configuration
-
-Edit `config/settings.yaml`:
-
-```yaml
-clock_timeout: 120      # Seconds before clock returns to idle
-message_timeout: 300    # Seconds before message expires
-default_volume: 70      # Default volume level (0-100)
-default_brightness: 100 # Default brightness level (0-100)
+1. Edit `config/voice_commands.json`:
+```json
+{
+  "new command phrase": "action_identifier"
+}
 ```
 
-### Day/Night Time Thresholds
-
-Edit in `ui/app.js`:
-
-```javascript
-const CONFIG = {
-    DAY_START_HOUR: 6,   // 6 AM - Switch to day mode
-    NIGHT_START_HOUR: 18, // 6 PM - Switch to night mode
-};
+2. Add handler in `services/voice_service.py`:
+```python
+if action == "action_identifier":
+    # Your action code
+    self.navigate(AppState.VIEW_CUSTOM)
+    self._speak("Action executed")
+    return True
 ```
 
-## 📝 Notes
+### Creating New Views
 
-- Day/night mode switches automatically based on system time
-- Sun rays animate with a slow rotation effect
-- Stars twinkle with staggered animations in night mode
-- Photo frame area is a placeholder for future photo slideshow feature
-- Voice module runs independently from UI
-- Scripts are designed for Linux (Raspberry Pi)
-- Adjust display output name in `system_controls.py` for brightness
+1. Create `ui/views/custom_view.py`:
+```python
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QPainter, QFont, QColor
 
-## 🚀 Future Enhancements
+class CustomView(QWidget):
+    def __init__(self, app_state, navigate_callback):
+        super().__init__()
+        self.app_state = app_state
+        self.navigate = navigate_callback
+        self.setStyleSheet("background-color: #000000;")
+    
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        # Draw your retro UI
+```
 
-- [ ] Weather-based mood changes (cloudy sun, rainy, etc.)
-- [ ] Photo frame with slideshow from local folder or cloud
-- [ ] Additional themes and color schemes
-- [ ] Alarm/timer functionality
-- [ ] Calendar integration
+2. Register in `ui/main_window.py`
+
+---
 
 ## 🐛 Troubleshooting
 
-### Flask server won't start
-- Check Python version: `python3 --version`
-- Install dependencies: `pip3 install flask pyyaml`
+### No Sound
+```bash
+# Check audio device
+aplay -l
 
-### Voice recognition not working
-- Check microphone: `arecord -l`
-- Install audio dependencies: `sudo apt-get install portaudio19-dev`
-- Test with: `python3 -c "import speech_recognition as sr; print(sr.Microphone.list_microphone_names())"`
+# Test mpv
+mpv --no-video "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+```
 
-### Music not playing
-- Check Chromium: `which chromium-browser`
-- Test script: `./scripts/start_music.sh "test"`
+### Voice Control Not Working
+```bash
+# Test microphone
+arecord -l
 
-### Volume control not working
-- Check audio system: `amixer` or `pactl`
-- List sinks: `pactl list sinks short`
+# Install dependencies
+pip3 install SpeechRecognition pyttsx3 pyaudio
+```
 
-### Bluetooth not working
-- Check bluetoothctl: `bluetoothctl show`
-- Check rfkill: `rfkill list bluetooth`
+### Display Issues
+```bash
+# Check resolution
+xrandr
+
+# Set in config/settings.yaml
+resolution:
+  width: 1024
+  height: 600
+```
+
+---
+
+## 📝 License
+
+MIT License - feel free to modify and distribute.
+
+---
+
+## 🙏 Acknowledgments
+
+- PyQt5 for native widgets
+- mpv for headless music playback
+- Google Speech Recognition for voice control
+- pyttsx3 for text-to-speech
+
+---
+
+**Enjoy your retro hardware smart frame! 🖼️**
