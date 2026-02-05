@@ -9,11 +9,16 @@ from datetime import datetime
 from PyQt5.QtCore import Qt, QTimer, QRectF, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QColor, QBrush, QPen, QFont, QKeyEvent
-import sys
-import os
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from five_letter_words import FIVE_LETTER_WORDS
+
+# Import five-letter words list
+try:
+    from five_letter_words import FIVE_LETTER_WORDS
+except ImportError:
+    # Fallback for different directory structures
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from five_letter_words import FIVE_LETTER_WORDS
 
 logger = logging.getLogger(__name__)
 

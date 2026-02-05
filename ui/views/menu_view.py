@@ -5,7 +5,7 @@ Simple text-based menu with arrow selection.
 
 import logging
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from PyQt5.QtGui import QFont, QKeyEvent
 
 from models.app_state import AppState
