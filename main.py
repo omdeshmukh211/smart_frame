@@ -15,10 +15,25 @@ import sys
 import os
 import logging
 import argparse
+import faulthandler
+import signal
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_ROOT)
+
+# Ensure data dir exists early so crash logs can be written
+data_dir_early = os.path.join(PROJECT_ROOT, 'data')
+os.makedirs(data_dir_early, exist_ok=True)
+_faulthandler_log_path = os.path.join(data_dir_early, 'faulthandler.log')
+_faulthandler_file = open(_faulthandler_log_path, 'a+')
+faulthandler.enable(file=_faulthandler_file)
+# Register handlers for common fatal signals
+for _sig in (signal.SIGILL, signal.SIGSEGV, signal.SIGABRT, signal.SIGFPE):
+    try:
+        faulthandler.register(_sig, file=_faulthandler_file, all_threads=True)
+    except Exception:
+        pass
 
 # PyQt5 imports - NATIVE WIDGETS ONLY
 from PyQt5.QtWidgets import QApplication
