@@ -44,6 +44,28 @@ class MenuView(QWidget):
         layout.setContentsMargins(60, 60, 60, 60)
         layout.setSpacing(0)
         
+        # Top bar with close button
+        top_bar_layout = QHBoxLayout()
+        top_bar_layout.addStretch()
+        
+        self.close_btn = QPushButton("✕")
+        self.close_btn.setFixedSize(50, 50)
+        self.close_btn.setFont(QFont("Arial", 20, QFont.Bold))
+        self.close_btn.clicked.connect(lambda: self.navigate(AppState.VIEW_HOME))
+        self.close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #F44336;
+                color: white;
+                border-radius: 25px;
+                border: none;
+            }
+            QPushButton:pressed {
+                background-color: #D32F2F;
+            }
+        """)
+        top_bar_layout.addWidget(self.close_btn)
+        layout.addLayout(top_bar_layout)
+        
         # Title
         self.title_label = QLabel("MENU")
         self.title_label.setFont(QFont("Courier New", 32, QFont.Bold))
@@ -68,13 +90,6 @@ class MenuView(QWidget):
             layout.addSpacing(20)
         
         layout.addStretch()
-        
-        # Hint at bottom
-        self.hint_label = QLabel("[TAP] Select   [BACK] Home")
-        self.hint_label.setFont(QFont("Courier New", 14))
-        self.hint_label.setStyleSheet("color: #606060; background: transparent;")
-        self.hint_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.hint_label)
         
         self._update_display()
     

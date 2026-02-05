@@ -45,6 +45,7 @@ class SnakeGameWidget(QWidget):
         self.score = 0
         self.is_running = False
         self.is_game_over = False
+        self.replay_button_rect = QRect()  # For replay button
         
         self._init_ui()
         self._init_timer()
@@ -156,6 +157,16 @@ class SnakeGameWidget(QWidget):
         
         w, h = self.width(), self.height()
         
+        # Draw EXIT button at top-right
+        painter.setPen(QColor(255, 100, 100))
+        painter.setBrush(QBrush(QColor(255, 100, 100, 50)))
+        exit_rect = QRect(w - 80, 10, 70, 40)
+        painter.drawRoundedRect(exit_rect, 5, 5)
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont("Arial", 14, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(exit_rect, Qt.AlignCenter, "EXIT")
+        
         # Calculate cell size
         grid_size = min(w, h) - 40  # Leave margin
         cell_size = grid_size // self.GRID_SIZE
@@ -207,16 +218,36 @@ class SnakeGameWidget(QWidget):
         
         # Draw game over
         if self.is_game_over:
+            # Draw semi-transparent overlay
+            overlay = QColor(0, 0, 0, 180)
+            painter.fillRect(self.rect(), overlay)
+            
             painter.setPen(QColor(255, 100, 100))
             font = QFont("Courier New", 32, QFont.Bold)
             painter.setFont(font)
-            painter.drawText(0, 0, w, h, Qt.AlignCenter, "GAME OVER")
+            painter.drawText(0, 0, w, h - 100, Qt.AlignCenter, "GAME OVER")
             
             painter.setPen(QColor(200, 200, 200))
             font = QFont("Courier New", 18)
             painter.setFont(font)
-            painter.drawText(0, h // 2 + 40, w, 30, Qt.AlignCenter, f"Final Score: {self.score}")
-            painter.drawText(0, h // 2 + 70, w, 30, Qt.AlignCenter, "Press SPACE to restart")
+            painter.drawText(0, h // 2 + 20, w, 30, Qt.AlignCenter, f"Final Score: {self.score}")
+            
+            # Draw replay button
+            button_width, button_height = 120, 40
+            button_x = (w - button_width) // 2
+            button_y = h // 2 + 60
+            self.replay_button_rect = QRect(button_x, button_y, button_width, button_height)
+            
+            # Draw button background
+            painter.setBrush(QColor(100, 200, 100))
+            painter.setPen(QColor(80, 160, 80))
+            painter.drawRoundedRect(self.replay_button_rect, 8, 8)
+            
+            # Draw button text
+            painter.setPen(QColor(255, 255, 255))
+            font = QFont("Courier New", 14, QFont.Bold)
+            painter.setFont(font)
+            painter.drawText(self.replay_button_rect, Qt.AlignCenter, "REPLAY")
     
     def keyPressEvent(self, event: QKeyEvent):
         """Handle keyboard input."""
@@ -251,9 +282,10 @@ class SnakeGameWidget(QWidget):
     def mousePressEvent(self, event):
         """Handle touch/mouse for direction control."""
         if self.is_game_over:
-            # Tap anywhere to restart
-            self.reset_game()
-            self.start_game()
+            # Check if replay button was clicked
+            if hasattr(self, 'replay_button_rect') and self.replay_button_rect.contains(event.pos()):
+                self.reset_game()
+                self.start_game()
             return
         
         # Divide screen into 4 zones for direction control
