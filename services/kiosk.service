@@ -41,6 +41,9 @@ Environment=XDG_RUNTIME_DIR=/run/user/1000
 Environment=QT_QPA_PLATFORM=xcb
 Environment=QT_XCB_GL_INTEGRATION=none
 
+# PATH for finding yt-dlp, mpv, and other binaries (includes user's .local/bin for yt-dlp)
+Environment=PATH=/home/raspberrypi4/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 # Kiosk mode settings - hide desktop panels and mouse cursor
 Environment=KIOSK_MODE=true
 Environment=LXDE_AUTOSTART_DISABLE=true

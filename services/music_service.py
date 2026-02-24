@@ -216,9 +216,17 @@ class MusicService(QThread):
         """Called when mpv process finishes."""
         logger.info(f"Playback finished (exit code: {exit_code})")
         
-        # Auto-play next track if available
+        # Auto-play next track if available in queue
+        with self._lock:
+            has_next_in_queue = self.track_queue and self.current_queue_index < len(self.track_queue) - 1
+        
         if self._running:
-            self.next()
+            if has_next_in_queue:
+                # Play next from queue
+                self.next()
+            else:
+                # Get and play recommended track
+                self._autoplay_recommended()
     
     def pause(self):
         """Pause playback."""
@@ -273,3 +281,156 @@ class MusicService(QThread):
         # For next track, it will use updated setting
         self.app_state.set_setting('volume', volume)
         logger.info(f"Volume set to {volume}%")
+    
+    def _get_recommended_track(self, current_video_id: str) -> Optional[Dict]:
+        """
+        Get a recommended track based on current video.
+        
+        Args:
+            current_video_id: YouTube video ID of current track
+            
+        Returns:
+            Track dict with title, artist, video_id, url or None if failed
+        """
+        try:
+            logger.info(f"Fetching recommended tracks for video: {current_video_id}")
+            
+            # Use yt-dlp to get related videos
+            # The --flat-playlist option with a playlist URL will give us related videos
+            cmd = [
+                'yt-dlp',
+                '--flat-playlist',
+                '--skip-download',
+                '--print', '%(id)s|%(title)s|%(uploader)s',
+                f'https://www.youtube.com/watch?v={current_video_id}&list=RD{current_video_id}',
+                '--playlist-items', '2'  # Get the 2nd item (1st is current video)
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=15
+            )
+            
+            if result.returncode != 0:
+                logger.warning(f"Could not fetch recommendations: {result.stderr}")
+                # Fallback: search for similar songs
+                return self._search_similar_track()
+            
+            lines = result.stdout.strip().split('\n')
+            if len(lines) < 1:
+                logger.warning("No recommended tracks found")
+                return self._search_similar_track()
+            
+            # Parse the recommended track (format: video_id|title|uploader)
+            parts = lines[0].split('|')
+            if len(parts) >= 3:
+                video_id, title, uploader = parts[0], parts[1], parts[2]
+                
+                return {
+                    'title': title,
+                    'artist': uploader,
+                    'video_id': video_id,
+                    'url': f'https://www.youtube.com/watch?v={video_id}'
+                }
+            
+            return self._search_similar_track()
+            
+        except subprocess.TimeoutExpired:
+            logger.warning("Recommendation fetch timed out")
+            return self._search_similar_track()
+        except Exception as e:
+            logger.error(f"Error fetching recommended track: {e}")
+            return self._search_similar_track()
+    
+    def _search_similar_track(self) -> Optional[Dict]:
+        """
+        Search for a similar track when recommendations fail.
+        
+        Returns:
+            Track dict or None
+        """
+        try:
+            if not self.current_track:
+                return None
+            
+            # Search for similar songs based on current track
+            search_query = f"{self.current_track.get('title', '')} similar songs"
+            logger.info(f"Searching for similar track: {search_query}")
+            
+            cmd = [
+                'yt-dlp',
+                '--default-search', 'ytsearch1:',
+                '--skip-download',
+                '--get-id',
+                '--get-title',
+                '--get-uploader',
+                search_query
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=15
+            )
+            
+            if result.returncode != 0:
+                return None
+            
+            lines = result.stdout.strip().split('\n')
+            if len(lines) >= 2:
+                title = lines[0]
+                video_id = lines[-1]
+                
+                return {
+                    'title': title,
+                    'artist': lines[1] if len(lines) > 2 else 'Unknown',
+                    'video_id': video_id,
+                    'url': f'https://www.youtube.com/watch?v={video_id}'
+                }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error searching for similar track: {e}")
+            return None
+    
+    def _autoplay_recommended(self):
+        """
+        Fetch and play a recommended track in background thread.
+        """
+        def _fetch_and_play():
+            try:
+                # Get current track's video ID
+                video_id = None
+                with self._lock:
+                    if self.current_track and 'video_id' in self.current_track:
+                        video_id = self.current_track['video_id']
+                
+                if not video_id:
+                    logger.warning("No video ID available for recommendations")
+                    return
+                
+                # Get recommended track
+                recommended = self._get_recommended_track(video_id)
+                
+                if recommended:
+                    logger.info(f"Autoplaying recommended: {recommended['title']}")
+                    
+                    # Add to queue and play
+                    with self._lock:
+                        self.track_queue.append(recommended)
+                        self.current_queue_index = len(self.track_queue) - 1
+                    
+                    self._play_track(recommended)
+                else:
+                    logger.warning("No recommended track found")
+            
+            except Exception as e:
+                logger.error(f"Error in autoplay: {e}")
+        
+        # Run in background thread
+        thread = threading.Thread(target=_fetch_and_play, daemon=True)
+        thread.start()
