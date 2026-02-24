@@ -112,13 +112,9 @@ class SnakeGameWidget(QWidget):
         # Calculate new head position
         head_x, head_y = self.snake[0]
         dx, dy = self.direction.value
-        new_head = (head_x + dx, head_y + dy)
-        
-        # Check collision with walls
-        if (new_head[0] < 0 or new_head[0] >= self.GRID_SIZE or
-            new_head[1] < 0 or new_head[1] >= self.GRID_SIZE):
-            self._end_game()
-            return
+        new_head_x = (head_x + dx) % self.GRID_SIZE
+        new_head_y = (head_y + dy) % self.GRID_SIZE
+        new_head = (new_head_x, new_head_y)
         
         # Check collision with self
         if new_head in self.snake:
@@ -248,6 +244,16 @@ class SnakeGameWidget(QWidget):
             font = QFont("Courier New", 14, QFont.Bold)
             painter.setFont(font)
             painter.drawText(self.replay_button_rect, Qt.AlignCenter, "REPLAY")
+            
+            # Draw EXIT button on game over screen
+            painter.setPen(QColor(255, 100, 100))
+            painter.setBrush(QBrush(QColor(255, 100, 100, 50)))
+            exit_rect = QRect(w - 80, 10, 70, 40)
+            painter.drawRoundedRect(exit_rect, 5, 5)
+            painter.setPen(QColor(255, 255, 255))
+            font = QFont("Arial", 14, QFont.Bold)
+            painter.setFont(font)
+            painter.drawText(exit_rect, Qt.AlignCenter, "EXIT")
     
     def keyPressEvent(self, event: QKeyEvent):
         """Handle keyboard input."""

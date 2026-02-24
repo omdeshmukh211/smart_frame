@@ -2,3 +2,12 @@ __pycache__/
 *.pyc
 venv/
 .env
+
+# Local message data (should not be tracked - updated locally)
+messages/message_history.json
+messages/delivered_ids.json
+
+# Log files
+data/logs.txt
+data/smart_frame.log
+data/faulthandler.log

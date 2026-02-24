@@ -148,8 +148,15 @@ class PhotoView(QWidget):
         photo_path = self.photo_service.get_current_photo_path()
         
         if not photo_path or not Path(photo_path).exists():
+            logger.debug(f"No photo available: {photo_path}")
             self.current_pixmap = None
             self.update()
+            return
+        
+        # Check widget has valid size
+        if self.width() <= 0 or self.height() <= 60:
+            logger.debug(f"Widget has invalid size: {self.width()}x{self.height()}, deferring load")
+            QTimer.singleShot(100, self._load_photo)
             return
         
         try:
@@ -169,6 +176,7 @@ class PhotoView(QWidget):
             )
             
             self.current_pixmap = scaled_pixmap
+            logger.debug(f"Loaded photo: {photo_path.name} scaled to {scaled_pixmap.width()}x{scaled_pixmap.height()}")
             self.update()
             
         except Exception as e:
@@ -179,10 +187,12 @@ class PhotoView(QWidget):
     def _next_photo(self):
         """Go to next photo."""
         self.photo_service.next_photo()
+        self._load_photo()  # Explicitly load to ensure update
     
     def _previous_photo(self):
         """Go to previous photo."""
         self.photo_service.previous_photo()
+        self._load_photo()  # Explicitly load to ensure update
     
     def _toggle_slideshow(self):
         """Toggle slideshow play/pause."""
@@ -267,8 +277,9 @@ class PhotoView(QWidget):
         # Show controls initially
         self._show_controls_temp()
         
-        # Load current photo
-        self._load_photo()
+        # Defer photo loading until widget has correct size
+        # Use QTimer.singleShot to let Qt process layout first
+        QTimer.singleShot(100, self._load_photo)
         self.setFocus()
     
     def on_deactivate(self):
