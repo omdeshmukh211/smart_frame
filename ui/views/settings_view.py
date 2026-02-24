@@ -6,7 +6,7 @@ Text-based settings with discrete bar controls.
 import logging
 import subprocess
 from PyQt5.QtCore import Qt, QTimer, QRectF
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMessageBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton
 from PyQt5.QtGui import QFont, QKeyEvent, QPainter, QColor, QPen, QBrush
 
 from models.app_state import AppState
@@ -63,6 +63,23 @@ class SettingsView(QWidget):
     def _init_ui(self):
         """Initialize UI components."""
         self.setStyleSheet("background-color: #000000;")
+        
+        # Close button in top-right corner (consistent with other views)
+        self.close_btn = QPushButton("✕", self)
+        self.close_btn.setFixedSize(50, 50)
+        self.close_btn.setFont(QFont("Arial", 20, QFont.Bold))
+        self.close_btn.clicked.connect(lambda: self._go_back())
+        self.close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #F44336;
+                color: white;
+                border-radius: 25px;
+                border: none;
+            }
+            QPushButton:pressed {
+                background-color: #D32F2F;
+            }
+        """)
         # We use paintEvent for full control
     
     def paintEvent(self, event):
@@ -93,6 +110,12 @@ class SettingsView(QWidget):
         font = QFont("Courier New", 14)
         painter.setFont(font)
         painter.drawText(0, self.height() - 40, self.width(), 30, Qt.AlignCenter, hint)
+    
+    def resizeEvent(self, event):
+        """Handle resize to position close button."""
+        super().resizeEvent(event)
+        # Position close button in top-right corner
+        self.close_btn.move(self.width() - 60 - 50, 10)
     
     def _draw_menu(self, painter):
         """Draw the settings menu list."""

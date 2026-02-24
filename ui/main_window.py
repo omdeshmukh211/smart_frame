@@ -5,7 +5,7 @@ Fixed resolution display (1024x600).
 """
 
 import logging
-from PyQt5.QtCore import Qt, QTimer, QEvent
+from PyQt5.QtCore import Qt, QTimer, QEvent, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
 from PyQt5.QtGui import QKeySequence, QFont, QFontDatabase
 
@@ -186,6 +186,7 @@ class MainWindow(QMainWindow):
         if self.app_state.should_go_idle():
             self._navigate(AppState.VIEW_IDLE)
 
+    @pyqtSlot(str, str)
     def show_system_message(self, title: str, body: str):
         """Show a system message overlay."""
         if self.message_overlay:

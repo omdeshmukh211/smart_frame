@@ -12,8 +12,8 @@ import time
 # Configure logging for this module
 logger = logging.getLogger(__name__)
 
-# Update interval in seconds (2 minutes)
-UPDATE_INTERVAL = 120
+# Update interval in seconds (3 minutes)
+UPDATE_INTERVAL = 180
 
 
 class GitUpdater:

@@ -43,6 +43,8 @@ from PyQt5.QtCore import Qt
 from models.app_state import AppState
 from ui.main_window import MainWindow
 from config.settings_loader import load_settings
+from backend.git_updater import start_git_updater, stop_git_updater
+from backend.scheduled_message_manager import start_scheduled_message_manager
 
 
 def setup_logging(debug=False):
@@ -103,12 +105,47 @@ def main():
     window = MainWindow(app_state, fullscreen=args.fullscreen)
     window.show()
     
+    # Start background services
+    # Git auto-updater: pulls from remote every 3 minutes
+    try:
+        git_updater = start_git_updater(PROJECT_ROOT)
+        logger.info("Git auto-updater started")
+    except Exception as e:
+        logger.error(f"Failed to start git updater: {e}")
+    
+    # Scheduled message manager: checks for due messages and displays them
+    def on_scheduled_message(msg):
+        """Callback when a scheduled message is due."""
+        title = msg.get('from', 'Message')
+        body = msg.get('text', '')
+        logger.info(f"Scheduled message due: {title} - {body}")
+        # Show message via the overlay (must be called from main thread)
+        from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+        QMetaObject.invokeMethod(
+            window, 'show_system_message',
+            Qt.QueuedConnection,
+            Q_ARG(str, title),
+            Q_ARG(str, body)
+        )
+    
+    try:
+        scheduled_manager = start_scheduled_message_manager(on_scheduled_message)
+        logger.info("Scheduled message manager started")
+    except Exception as e:
+        logger.error(f"Failed to start scheduled message manager: {e}")
+    
     logger.info("Main window created and displayed")
     logger.info(f"Resolution: {window.DISPLAY_WIDTH}x{window.DISPLAY_HEIGHT}")
     logger.info("Application ready")
     
     # Run application event loop
     exit_code = app.exec_()
+    
+    # Stop background services
+    try:
+        stop_git_updater()
+    except Exception as e:
+        logger.error(f"Error stopping git updater: {e}")
     
     logger.info("Application shutting down")
     logger.info("=" * 60)

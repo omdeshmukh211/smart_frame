@@ -5,7 +5,6 @@ Locked layout music player with search, transport, volume, and dancing bars.
 
 import logging
 import random
-import subprocess
 from PyQt5.QtCore import Qt, QTimer, QRectF
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
 from PyQt5.QtGui import QFont, QPainter, QPen, QBrush, QColor, QKeyEvent
@@ -42,6 +41,14 @@ class MusicView(QWidget):
     # Volume steps (discrete)
     VOLUME_STEPS = 10
     
+    # Keyboard layout for search
+    KEYBOARD_ROWS = [
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+        ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ]
+    
     def __init__(self, app_state: AppState, music_service: MusicService, navigate_callback):
         super().__init__()
         self.app_state = app_state
@@ -53,7 +60,8 @@ class MusicView(QWidget):
         self.is_paused = False
         self.current_track = {'title': 'No track', 'artist': ''}
         self.bar_heights = [3, 5, 4, 6, 3, 5, 4, 6]  # Dancing bars
-        self.keyboard_process = None
+        self.keyboard_visible = False  # Native on-screen keyboard visibility
+        self.caps_lock = False  # Caps lock state
         
         self._init_ui()
         self._init_timers()
@@ -90,13 +98,14 @@ class MusicView(QWidget):
         self.search_input.returnPressed.connect(self._search_and_play)
         # Ensure search input gets focus on click
         self.search_input.setFocusPolicy(Qt.ClickFocus)
+        # Make search input read-only to prevent system keyboard
+        self.search_input.setReadOnly(True)
+        self.search_input.mousePressEvent = self._on_search_input_clicked
         
-    def _on_search_clicked(self, event):
-        """Handle search input click to ensure focus and keyboard."""
-        self.search_input.setFocus()
-        self.search_input.activateWindow()
-        # Call original mousePressEvent
-        QLineEdit.mousePressEvent(self.search_input, event)
+    def _on_search_input_clicked(self, event):
+        """Handle click on search input to show native keyboard."""
+        self.keyboard_visible = True
+        self.update()
     
     def _init_timers(self):
         """Initialize timers."""
@@ -148,6 +157,10 @@ class MusicView(QWidget):
         # Right column (track info, bars)
         self._draw_track_info(painter, 400, 180)
         self._draw_dancing_bars(painter, 400, 380)
+        
+        # Draw native keyboard if visible
+        if self.keyboard_visible:
+            self._draw_keyboard(painter)
     
     def _draw_transport(self, painter, x, y):
         """Draw transport buttons."""
@@ -306,9 +319,149 @@ class MusicView(QWidget):
             painter.setBrush(QBrush(color))
             painter.drawRect(bx, by, bar_w, bar_h)
     
+    def _draw_keyboard(self, painter):
+        """Draw the native on-screen keyboard for search."""
+        w, h = self.width(), self.height()
+        
+        # Keyboard background (semi-transparent overlay)
+        painter.setBrush(QBrush(QColor(0, 0, 0, 230)))
+        painter.setPen(Qt.NoPen)
+        keyboard_height = 280
+        keyboard_y = h - keyboard_height
+        painter.drawRect(0, keyboard_y, w, keyboard_height)
+        
+        # Border at top of keyboard
+        painter.setPen(QPen(QColor(80, 80, 80), 2))
+        painter.drawLine(0, keyboard_y, w, keyboard_y)
+        
+        # Key dimensions
+        key_w = 45
+        key_h = 45
+        spacing = 5
+        
+        start_y = keyboard_y + 15
+        
+        # Store key rects for click detection
+        self._keyboard_keys = {}
+        
+        # Draw letter/number rows
+        for row_idx, row in enumerate(self.KEYBOARD_ROWS):
+            row_width = len(row) * (key_w + spacing) - spacing
+            start_x = (w - row_width) // 2
+            y = start_y + row_idx * (key_h + spacing)
+            
+            for col_idx, letter in enumerate(row):
+                x = start_x + col_idx * (key_w + spacing)
+                display_letter = letter if self.caps_lock or letter.isdigit() else letter.lower()
+                self._draw_key(painter, x, y, key_w, key_h, display_letter, QColor(60, 60, 60))
+                self._keyboard_keys[letter] = QRectF(x, y, key_w, key_h)
+        
+        # Bottom row: CAPS, SPACE, BACKSPACE, SEARCH
+        bottom_y = start_y + 4 * (key_h + spacing)
+        
+        # Calculate positions for bottom row
+        total_bottom_width = 70 + spacing + 200 + spacing + 70 + spacing + 100  # CAPS + SPACE + BACK + SEARCH
+        bottom_start_x = (w - total_bottom_width) // 2
+        
+        # CAPS LOCK button
+        caps_color = QColor(100, 150, 100) if self.caps_lock else QColor(60, 60, 60)
+        self._draw_key(painter, bottom_start_x, bottom_y, 70, key_h, "CAPS", caps_color)
+        self._caps_rect = QRectF(bottom_start_x, bottom_y, 70, key_h)
+        
+        # SPACE button
+        space_x = bottom_start_x + 70 + spacing
+        self._draw_key(painter, space_x, bottom_y, 200, key_h, "SPACE", QColor(60, 60, 60))
+        self._space_rect = QRectF(space_x, bottom_y, 200, key_h)
+        
+        # BACKSPACE button
+        back_x = space_x + 200 + spacing
+        self._draw_key(painter, back_x, bottom_y, 70, key_h, "⌫", QColor(120, 80, 80))
+        self._backspace_rect = QRectF(back_x, bottom_y, 70, key_h)
+        
+        # SEARCH button
+        search_x = back_x + 70 + spacing
+        self._draw_key(painter, search_x, bottom_y, 100, key_h, "SEARCH", QColor(80, 120, 80))
+        self._search_btn_rect = QRectF(search_x, bottom_y, 100, key_h)
+        
+        # Close keyboard button (X) at top right of keyboard
+        close_x = w - 50
+        close_y = keyboard_y + 10
+        self._draw_key(painter, close_x, close_y, 40, 35, "✕", QColor(120, 60, 60))
+        self._close_kb_rect = QRectF(close_x, close_y, 40, 35)
+    
+    def _draw_key(self, painter, x, y, w, h, text, color):
+        """Draw a keyboard key."""
+        painter.setPen(QPen(QColor(100, 100, 100), 1))
+        painter.setBrush(QBrush(color))
+        painter.drawRoundedRect(int(x), int(y), int(w), int(h), 5, 5)
+        
+        painter.setPen(QColor(240, 240, 240))
+        font_size = 10 if len(text) > 2 else 14
+        font = QFont("Courier New", font_size, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(int(x), int(y), int(w), int(h), Qt.AlignCenter, text)
+    
+    def _handle_keyboard_click(self, pos):
+        """Handle clicks on the native keyboard. Returns True if handled."""
+        if not self.keyboard_visible:
+            return False
+        
+        x, y = pos.x(), pos.y()
+        
+        # Check close button
+        if hasattr(self, '_close_kb_rect') and self._close_kb_rect.contains(x, y):
+            self.keyboard_visible = False
+            self.update()
+            return True
+        
+        # Check letter/number keys
+        if hasattr(self, '_keyboard_keys'):
+            for letter, rect in self._keyboard_keys.items():
+                if rect.contains(x, y):
+                    current_text = self.search_input.text()
+                    char = letter if self.caps_lock or letter.isdigit() else letter.lower()
+                    self.search_input.setText(current_text + char)
+                    self.update()
+                    return True
+        
+        # Check CAPS key
+        if hasattr(self, '_caps_rect') and self._caps_rect.contains(x, y):
+            self.caps_lock = not self.caps_lock
+            self.update()
+            return True
+        
+        # Check SPACE key
+        if hasattr(self, '_space_rect') and self._space_rect.contains(x, y):
+            current_text = self.search_input.text()
+            self.search_input.setText(current_text + ' ')
+            self.update()
+            return True
+        
+        # Check BACKSPACE key
+        if hasattr(self, '_backspace_rect') and self._backspace_rect.contains(x, y):
+            current_text = self.search_input.text()
+            if current_text:
+                self.search_input.setText(current_text[:-1])
+            self.update()
+            return True
+        
+        # Check SEARCH key
+        if hasattr(self, '_search_btn_rect') and self._search_btn_rect.contains(x, y):
+            self.keyboard_visible = False
+            self._search_and_play()
+            self.update()
+            return True
+        
+        return False
+    
     def mousePressEvent(self, event):
         """Handle mouse clicks."""
         pos = event.pos()
+        
+        # Check keyboard first if visible
+        if self.keyboard_visible:
+            if self._handle_keyboard_click(pos):
+                return
         
         # Check transport buttons
         if hasattr(self, '_prev_rect') and self._prev_rect.contains(pos.x(), pos.y()):
@@ -341,32 +494,6 @@ class MusicView(QWidget):
             self._go_back()
             return
     
-    def _on_search_clicked(self, event):
-        """Handle search box click."""
-        QLineEdit.mousePressEvent(self.search_input, event)
-        self._show_keyboard()
-    
-    def _show_keyboard(self):
-        """Launch on-screen keyboard if available."""
-        try:
-            result = subprocess.run(['pgrep', '-x', 'matchbox-keyb'], capture_output=True)
-            if result.returncode != 0:
-                logger.info("Launching matchbox-keyboard")
-                self.keyboard_process = subprocess.Popen(
-                    ['matchbox-keyboard'],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-        except Exception as e:
-            logger.debug(f"Keyboard not available: {e}")
-    
-    def _hide_keyboard(self):
-        """Hide on-screen keyboard."""
-        try:
-            subprocess.run(['pkill', 'matchbox-keyb'], timeout=2)
-        except:
-            pass
-    
     def _search_and_play(self):
         """Search and play music."""
         query = self.search_input.text().strip()
@@ -374,7 +501,7 @@ class MusicView(QWidget):
             return
         
         logger.info(f"Searching for: {query}")
-        self._hide_keyboard()
+        self.keyboard_visible = False
         self.music_service.search_and_play(query)
     
     def _toggle_play_pause(self):
@@ -415,7 +542,7 @@ class MusicView(QWidget):
     
     def _go_back(self):
         """Go back to menu."""
-        self._hide_keyboard()
+        self.keyboard_visible = False
         if self.navigate:
             self.navigate(AppState.VIEW_MENU)
     
@@ -476,5 +603,5 @@ class MusicView(QWidget):
     def on_deactivate(self):
         """Called when view becomes inactive."""
         logger.debug("Music view deactivated")
-        self._hide_keyboard()
+        self.keyboard_visible = False
         self.bars_timer.stop()

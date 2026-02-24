@@ -29,6 +29,10 @@ MESSAGE_HISTORY_FILE = os.path.join(MESSAGES_DIR, 'message_history.json')
 # Check interval in seconds
 CHECK_INTERVAL = 30
 
+# Messages scheduled more than this many seconds in the past are considered "missed"
+# (system was off when they were due) - they go directly to history as unread
+MISSED_THRESHOLD_SECONDS = 60
+
 
 class ScheduledMessageManager:
     """
@@ -143,7 +147,10 @@ class ScheduledMessageManager:
                 
                 # Check if message is due
                 if now >= schedule_time:
-                    self._deliver_message(msg)
+                    # Check if message was missed (system was off when it was due)
+                    time_since_scheduled = (now - schedule_time).total_seconds()
+                    is_missed = time_since_scheduled > MISSED_THRESHOLD_SECONDS
+                    self._deliver_message(msg, missed=is_missed)
             
             except Exception as e:
                 logger.error(f"Error processing message {msg.get('id', 'unknown')}: {e}")
@@ -225,12 +232,13 @@ class ScheduledMessageManager:
             )
             return None
     
-    def _deliver_message(self, msg: Dict):
+    def _deliver_message(self, msg: Dict, missed: bool = False):
         """
         Deliver a message and mark it as delivered.
         
         Args:
             msg: The message dictionary to deliver
+            missed: If True, message was missed (system was off) - store as unread without overlay
         """
         msg_id = msg.get('id')
         
@@ -245,8 +253,13 @@ class ScheduledMessageManager:
         # Persist delivered ID to disk immediately
         self._save_delivered_ids()
         
-        # Store in message history
-        self._store_message_history(msg)
+        # Store in message history (mark as unread if missed)
+        self._store_message_history(msg, unread=missed)
+        
+        if missed:
+            # Message was missed (system was off) - don't show overlay
+            logger.info(f"Missed message stored as unread: {msg_id}")
+            return
         
         logger.info(f"Delivering scheduled message: {msg_id}")
         
@@ -257,7 +270,7 @@ class ScheduledMessageManager:
             except Exception as e:
                 logger.error(f"Error in message callback for {msg_id}: {e}")
         else:
-            logger.warning("No message callback set - message logged only")
+            logger.warning("No message callback set - message logged only"))
     
     def _load_delivered_ids(self):
         """Load delivered message IDs from disk."""
@@ -280,12 +293,13 @@ class ScheduledMessageManager:
         except Exception as e:
             logger.error(f"Error saving delivered IDs: {e}")
     
-    def _store_message_history(self, msg: Dict):
+    def _store_message_history(self, msg: Dict, unread: bool = False):
         """
         Store delivered message in history file with delivery timestamp.
         
         Args:
             msg: The delivered message
+            unread: If True, mark the message as unread (for missed messages)
         """
         try:
             history = self.get_message_history()
@@ -298,6 +312,7 @@ class ScheduledMessageManager:
                 'scheduled_at': msg.get('schedule_at'),
                 'scheduled_timezone': msg.get('timezone'),
                 'delivered_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'unread': unread,
             }
             
             history.append(entry)

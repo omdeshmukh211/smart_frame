@@ -127,6 +127,10 @@ class PhotoService(QThread):
         """Get total number of photos."""
         return len(self.photos)
     
+    def get_current_index(self) -> int:
+        """Get current photo index."""
+        return self.current_index
+    
     def get_current_photo_path(self) -> Optional[Path]:
         """
         Get current photo path.
