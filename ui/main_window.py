@@ -69,17 +69,17 @@ class MainWindow(QMainWindow):
 
     def _init_ui(self):
         self.setWindowTitle("Smart Frame")
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        
+        # Pure black background
+        self.setStyleSheet("background-color: #000000;")
 
         if self.fullscreen:
             self.showFullScreen()
             self.setCursor(Qt.BlankCursor)
         else:
             self.setFixedSize(self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT)
-
-        self.setWindowFlags(Qt.FramelessWindowHint)
-        
-        # Pure black background
-        self.setStyleSheet("background-color: #000000;")
+            self.show()
 
         central = QWidget(self)
         self.setCentralWidget(central)
