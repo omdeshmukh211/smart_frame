@@ -270,7 +270,7 @@ class ScheduledMessageManager:
             except Exception as e:
                 logger.error(f"Error in message callback for {msg_id}: {e}")
         else:
-            logger.warning("No message callback set - message logged only"))
+            logger.warning("No message callback set - message logged only")
     
     def _load_delivered_ids(self):
         """Load delivered message IDs from disk."""
